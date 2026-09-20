@@ -7,6 +7,8 @@ const authUser = {
 };
 
 test.describe("auth flows", () => {
+  test.use({ extraHTTPHeaders: { "X-Real-IP": "77.88.8.8" } });
+
   test("logs in with mocked backend response and persists the session", async ({
     page,
   }) => {

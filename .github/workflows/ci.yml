@@ -102,6 +102,9 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
+      - name: Prepare country database
+        run: npm run geoip:update
+
       - name: Run Playwright tests
         run: npm run test:e2e
 
@@ -183,6 +186,7 @@ jobs:
           grep -F 'proxy_pass http://frontend:3000;' "$rendered_config"
           grep -F 'proxy_pass http://backend:3001;' "$rendered_config"
           grep -F 'proxy_set_header X-Forwarded-Proto $scheme;' "$rendered_config"
+          grep -F 'proxy_set_header X-Real-IP $remote_addr;' "$rendered_config"
           grep -F 'proxy_set_header Upgrade $http_upgrade;' "$rendered_config"
           grep -F 'client_max_body_size 10m;' "$rendered_config"
           grep -F 'location /.well-known/acme-challenge/' "$rendered_config"

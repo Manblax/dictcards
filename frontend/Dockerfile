@@ -17,8 +17,11 @@ ENV INTERNAL_API_URL=$INTERNAL_API_URL
 COPY next.config.mjs postcss.config.mjs tsconfig.json ./
 COPY app ./app
 COPY components ./components
+COPY hooks ./hooks
 COPY lib ./lib
 COPY types ./types
+COPY scripts/update-geoip.mjs ./scripts/update-geoip.mjs
+RUN npm run geoip:update
 RUN npm run build
 
 FROM node:22-bookworm-slim AS runtime
@@ -38,6 +41,10 @@ COPY package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 COPY --from=build /app/.next ./.next
+COPY --from=build /app/.geoip/data ./.geoip/data
+COPY lib/geoip-database.mjs ./lib/geoip-database.mjs
+COPY scripts/update-geoip.mjs ./scripts/update-geoip.mjs
+RUN mkdir -p .geoip/tmp
 COPY next.config.mjs ./
 
 EXPOSE 3000

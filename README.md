@@ -270,6 +270,7 @@ variables `API_HOST` и `NEXT_PUBLIC_API_URL`.
 
 ## Дополнительная документация
 
+- [Google sign-in visibility by country](./docs/google-auth-country.md)
 - [Быстрый старт frontend](./frontend/QUICK_START.md)
 - [Компоненты frontend](./frontend/COMPONENTS.md)
 - [Архитектура frontend](./frontend/PROJECT_OVERVIEW.md)
