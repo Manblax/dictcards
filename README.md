@@ -11,7 +11,7 @@
 
 ## Возможности
 
-- Регистрация, вход по логину или email и Google OAuth.
+- Регистрация, вход по логину или email, Google OAuth и Яндекс ID.
 - Защищённые пользовательские модули с созданием, редактированием, удалением и
   сохранённым порядком терминов.
 - Главная страница с недавними модулями и библиотека с постраничной загрузкой.
@@ -71,6 +71,10 @@ DICTIONARY_SERVICE_URL=http://dictionary-service:4000
 
 Google OAuth необязателен для обычной регистрации. Для него дополнительно
 укажите `GOOGLE_CLIENT_ID` и `GOOGLE_CLIENT_SECRET`.
+
+Для Яндекс ID заполните `YANDEX_CLIENT_ID`, `YANDEX_CLIENT_SECRET` и
+`YANDEX_CALLBACK_URL` в корневом `.env` для Docker или `backend/.env` для запуска
+на хосте. [Регистрация OAuth-приложения и настройка Яндекса](docs/yandex-auth.md).
 
 При необходимости переопределить публичные или внутренние URL:
 
@@ -177,6 +181,8 @@ npm --prefix frontend run dev
 - `POST /auth/login`
 - `GET /auth/google`
 - `GET /auth/google/callback`
+- `GET /auth/yandex`
+- `GET /auth/yandex/callback`
 
 ### Модули
 
@@ -234,7 +240,7 @@ flashcards2/
 │   ├── e2e/                    # Playwright tests
 │   └── types/
 ├── backend/
-│   ├── src/auth/               # JWT и Google OAuth
+│   ├── src/auth/               # JWT, Google OAuth и Яндекс ID
 │   ├── src/flashcards/         # CRUD модулей и терминов
 │   ├── src/dictionary/         # Кеш и проксирование словаря
 │   ├── src/uploads/            # Загрузка изображений
@@ -271,6 +277,7 @@ variables `API_HOST` и `NEXT_PUBLIC_API_URL`.
 ## Дополнительная документация
 
 - [Google sign-in visibility by country](./docs/google-auth-country.md)
+- [Яндекс ID: регистрация приложения, окружение и проверка](./docs/yandex-auth.md)
 - [Быстрый старт frontend](./frontend/QUICK_START.md)
 - [Компоненты frontend](./frontend/COMPONENTS.md)
 - [Архитектура frontend](./frontend/PROJECT_OVERVIEW.md)

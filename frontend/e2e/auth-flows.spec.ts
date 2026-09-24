@@ -146,6 +146,34 @@ test.describe("auth flows", () => {
       .toContain('"email":"demo@example.com"');
   });
 
+  test("persists Yandex fragment credentials and removes them from history", async ({ page, context }) => {
+    const requests: string[] = [];
+    page.on("request", (request) => requests.push(request.url()));
+    await page.goto("/auth/callback?provider=yandex#access_token=yandex-token&id=user-1&username=demo&email=demo%40example.com");
+    await expect(page).toHaveURL("/");
+    await expect.poll(() => page.evaluate(() => localStorage.getItem("token"))).toBe("yandex-token");
+    await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("user") || "null"))).toEqual(authUser);
+    expect((await context.cookies()).find((cookie) => cookie.name === "token")?.value).toBe("yandex-token");
+    expect(requests.some((url) => url.includes("yandex-token"))).toBe(false);
+  });
+
+  test("rejects incomplete Yandex fragments and query credentials", async ({ page }) => {
+    for (const url of [
+      "/auth/callback?provider=yandex#access_token=incomplete",
+      "/auth/callback?provider=yandex&access_token=query-token&id=user-1&username=demo&email=demo%40example.com",
+    ]) {
+      await page.goto(url);
+      await expect(page).toHaveURL(/\/login\?error=yandex_auth_invalid_response$/);
+      await expect(page.getByText("Не удалось войти через Яндекс. Попробуйте еще раз.")).toBeVisible();
+      expect(await page.evaluate(() => localStorage.getItem("token"))).toBeNull();
+    }
+  });
+
+  test("explains a missing Yandex configuration", async ({ page }) => {
+    await page.goto("/login?error=yandex_not_configured");
+    await expect(page.getByText("Вход через Яндекс пока не настроен. Используйте другой способ входа.")).toBeVisible();
+  });
+
   test("redirects invalid Google callbacks to the login error state", async ({
     page,
   }) => {

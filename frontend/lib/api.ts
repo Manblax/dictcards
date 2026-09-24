@@ -86,6 +86,10 @@ export function getGoogleAuthUrl() {
   return getPublicApiUrl("/auth/google");
 }
 
+export function getYandexAuthUrl() {
+  return getPublicApiUrl("/auth/yandex");
+}
+
 export async function getModules(
   skip = 0,
   take = 20,

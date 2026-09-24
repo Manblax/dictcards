@@ -1,7 +1,7 @@
-# Google sign-in visibility by country
+# Google and Yandex sign-in visibility by country
 
-The login and registration pages hide Google sign-in when the visitor's public
-IP address resolves to `RU`. The server decides before rendering either form.
+The login and registration pages show Yandex instead of Google when the visitor's
+public IP address resolves to `RU`. The server decides before rendering either form.
 Russian browser language alone does not hide Google. VPNs can change the detected
 country; this is approximate IP location, not citizenship.
 
@@ -10,7 +10,7 @@ Only `X-Real-IP` is used. The production Nginx template overwrites it with
 that proxy. If a CDN is introduced, review the client-IP trust configuration first;
 the current setup expects visitors to connect directly to Nginx.
 
-Missing, invalid, private, reserved, or unknown addresses show Google. Database
+Missing, invalid, private, reserved, or unknown addresses show Google and hide Yandex. Database
 initialization or lookup failures also show Google. No visitor IP is sent to a
 geolocation service. The frontend does not persist the location or change the user
 schema. Auth pages are rendered per request and must not be put behind a shared
@@ -52,9 +52,10 @@ initialization after one minute.
 Only the buttons are hidden. Direct sign-in remains available at
 `https://<API_HOST>/auth/google` (locally `http://localhost:3001/auth/google`).
 The OAuth callback and password flows are unchanged. Accounts created through
-Google have a generated random password, so their owners need the direct Google
-link unless they already have a usable password; this change adds no password
-reset or migration flow.
+Google have a generated random password, so their owners can use the direct Google
+link, an existing password, or Yandex with exactly the same email. Yandex links
+that account automatically and preserves its cards. No password reset is added.
+See [Yandex ID setup and account linking](yandex-auth.md).
 
 ## Verification
 

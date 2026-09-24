@@ -1,10 +1,17 @@
-import { Injectable, UnauthorizedException, ConflictException, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
+import { Prisma } from '@prisma/client';
+import { fetchYandexProfile, YandexAuthError } from './yandex-oauth';
 
 interface GoogleUserInfo {
   email: string;
@@ -31,7 +38,9 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new ConflictException('User with this email or username already exists');
+      throw new ConflictException(
+        'User with this email or username already exists',
+      );
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -102,11 +111,63 @@ export class AuthService {
     return this.buildAuthResponse(user);
   }
 
+  async loginWithYandexCode(code: string, verifier: string) {
+    const profile = await fetchYandexProfile(code, verifier);
+    // Unique constraints plus conditional linking protect concurrent callbacks.
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const linked = await this.prisma.user.findUnique({
+        where: { yandexId: profile.id },
+      });
+      if (linked) return this.buildAuthResponse(linked);
+      if (!profile.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email)) {
+        throw new YandexAuthError('yandex_email_missing');
+      }
+      try {
+        const existing = await this.prisma.user.findUnique({
+          where: { email: profile.email },
+        });
+        if (existing) {
+          if (existing.yandexId && existing.yandexId !== profile.id) {
+            throw new YandexAuthError('yandex_account_conflict');
+          }
+          const result = await this.prisma.user.updateMany({
+            where: { id: existing.id, yandexId: null },
+            data: { yandexId: profile.id },
+          });
+          if (result.count === 1) return this.buildAuthResponse(existing);
+          continue;
+        }
+        const baseUsername = this.buildBaseUsername({
+          email: profile.email,
+          name: profile.login || 'yandex',
+        });
+        const username = await this.generateUniqueUsername(baseUsername);
+        const user = await this.prisma.user.create({
+          data: {
+            email: profile.email,
+            username,
+            yandexId: profile.id,
+            password: await bcrypt.hash(randomUUID(), 10),
+          },
+        });
+        return this.buildAuthResponse(user);
+      } catch (error) {
+        if (
+          !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+          error.code !== 'P2002'
+        )
+          throw error;
+      }
+    }
+    throw new YandexAuthError('yandex_auth_failed');
+  }
+
   private async exchangeGoogleCodeForTokens(code: string) {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
     const redirectUri =
-      process.env.GOOGLE_CALLBACK_URL || 'http://localhost:3001/auth/google/callback';
+      process.env.GOOGLE_CALLBACK_URL ||
+      'http://localhost:3001/auth/google/callback';
 
     if (!clientId || !clientSecret) {
       throw new InternalServerErrorException(
@@ -129,18 +190,25 @@ export class AuthService {
     });
 
     if (!response.ok) {
-      throw new UnauthorizedException('Failed to exchange Google authorization code');
+      throw new UnauthorizedException(
+        'Failed to exchange Google authorization code',
+      );
     }
 
     return response.json() as Promise<{ access_token: string }>;
   }
 
-  private async fetchGoogleUserInfo(accessToken: string): Promise<GoogleUserInfo> {
-    const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
+  private async fetchGoogleUserInfo(
+    accessToken: string,
+  ): Promise<GoogleUserInfo> {
+    const response = await fetch(
+      'https://www.googleapis.com/oauth2/v3/userinfo',
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
       },
-    });
+    );
 
     if (!response.ok) {
       throw new UnauthorizedException('Failed to fetch Google user profile');
@@ -164,7 +232,12 @@ export class AuthService {
       return normalized;
     }
 
-    return `user${googleUser.email.split('@')[0].replace(/[^a-z0-9]/gi, '').slice(0, 10) || 'google'}`;
+    return `user${
+      googleUser.email
+        .split('@')[0]
+        .replace(/[^a-z0-9]/gi, '')
+        .slice(0, 10) || 'google'
+    }`;
   }
 
   private async generateUniqueUsername(baseUsername: string): Promise<string> {
@@ -185,7 +258,11 @@ export class AuthService {
     }
   }
 
-  private buildAuthResponse(user: { id: string; username: string; email: string }) {
+  private buildAuthResponse(user: {
+    id: string;
+    username: string;
+    email: string;
+  }) {
     const payload = { sub: user.id, username: user.username };
 
     return {

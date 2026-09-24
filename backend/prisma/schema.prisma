@@ -16,6 +16,7 @@ model User {
   email     String   @unique
   username  String   @unique
   password  String
+  yandexId  String?  @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

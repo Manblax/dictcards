@@ -29,6 +29,9 @@ services:
       DATABASE_URL: postgresql://myuser:mypassword@postgres:5432/flashcards_db
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost:3001/auth/google/callback}
+      YANDEX_CLIENT_ID: ${YANDEX_CLIENT_ID:-}
+      YANDEX_CLIENT_SECRET: ${YANDEX_CLIENT_SECRET:-}
+      YANDEX_CALLBACK_URL: ${YANDEX_CALLBACK_URL:-http://localhost:3001/auth/yandex/callback}
       DICTIONARY_SERVICE_URL: ${DICTIONARY_SERVICE_URL:-http://dictionary-service:4000}
       TTS_VOICE_UK: ${TTS_VOICE_UK:-en-GB-Chirp3-HD-Achernar}
       TTS_VOICE_US: ${TTS_VOICE_US:-en-US-Chirp3-HD-Achernar}

@@ -5,6 +5,7 @@ import {
   createModule,
   deleteModule,
   getGoogleAuthUrl,
+  getYandexAuthUrl,
   getModule,
   getModules,
   getPublicApiUrl,
@@ -23,6 +24,7 @@ describe("api utilities", () => {
       "http://localhost:3001/auth/login",
     );
     expect(getGoogleAuthUrl()).toBe("http://localhost:3001/auth/google");
+    expect(getYandexAuthUrl()).toBe("http://localhost:3001/auth/yandex");
   });
 
   it("does not request modules when there is no auth token", async () => {

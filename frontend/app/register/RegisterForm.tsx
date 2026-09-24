@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import AuthInput from "@/components/AuthInput";
+import YandexAuthButton from "@/components/YandexAuthButton";
 import { getGoogleAuthUrl, register } from "@/lib/api";
 import { getStoredUser, persistAuthSession } from "@/lib/auth";
 import { resolveSafeRedirect } from "@/lib/navigation";
@@ -147,6 +148,7 @@ function RegisterPageContent({ showGoogleAuth }: { showGoogleAuth: boolean }) {
             {isLoading ? <span className="loading loading-spinner"></span> : "Зарегистрироваться"}
           </button>
 
+          {!showGoogleAuth && <YandexAuthButton registration />}
           {showGoogleAuth && <a
             href={getGoogleAuthUrl()}
             className="btn w-full rounded-xl bg-white text-black hover:bg-neutral-100 border border-neutral-300 font-bold"

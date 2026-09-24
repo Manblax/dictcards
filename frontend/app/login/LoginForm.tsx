@@ -4,6 +4,8 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import AuthInput from "@/components/AuthInput";
+import YandexAuthButton from "@/components/YandexAuthButton";
+import { getAuthErrorMessage } from "@/lib/auth-error";
 import { login, getGoogleAuthUrl } from "@/lib/api";
 import { getStoredUser, persistAuthSession } from "@/lib/auth";
 import { resolveSafeRedirect } from "@/lib/navigation";
@@ -129,6 +131,7 @@ function LoginPageContent({ showGoogleAuth }: { showGoogleAuth: boolean }) {
         {isLoading ? <span className="loading loading-spinner"></span> : "Войти"}
       </button>
 
+      {!showGoogleAuth && <YandexAuthButton />}
       {showGoogleAuth && <a
         href={getGoogleAuthUrl()}
         className="btn w-full rounded-xl bg-white text-black hover:bg-neutral-100 border border-neutral-300 font-bold"
@@ -178,7 +181,7 @@ function LoginPageLayout({
 
         {authError && (
           <p className="mt-4 text-sm text-error">
-            Не удалось войти через Google. Попробуйте еще раз.
+            {getAuthErrorMessage(authError)}
           </p>
         )}
 

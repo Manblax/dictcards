@@ -39,6 +39,8 @@ required_variables=(
   JWT_SECRET
   GOOGLE_CLIENT_ID
   GOOGLE_CLIENT_SECRET
+  YANDEX_CLIENT_ID
+  YANDEX_CLIENT_SECRET
   INTERNAL_API_URL
   DICTIONARY_SERVICE_URL
 )
@@ -52,7 +54,7 @@ for variable_name in "${required_variables[@]}"; do
   printf -v "${variable_name}" '%s' "${variable_value}"
 done
 
-for secret_name in POSTGRES_PASSWORD JWT_SECRET GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET; do
+for secret_name in POSTGRES_PASSWORD JWT_SECRET GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET YANDEX_CLIENT_ID YANDEX_CLIENT_SECRET; do
   if [[ "${!secret_name}" == replace-with-* ]]; then
     echo "Replace the example value for ${secret_name} before deployment." >&2
     exit 1

@@ -5,13 +5,21 @@ import {
   Get,
   Query,
   Res,
+  Req,
   InternalServerErrorException,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
+import {
+  startYandexOAuth,
+  verifyYandexState,
+  YANDEX_COOKIE,
+  yandexCookieOptions,
+  YandexAuthError,
+} from './yandex-oauth';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -32,6 +40,71 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
+  }
+
+  @Get('yandex')
+  @ApiOperation({ summary: 'Start Yandex ID OAuth authentication' })
+  @ApiResponse({
+    status: 302,
+    description: 'Redirects to Yandex or the login error page',
+  })
+  yandexAuth(@Res() res: Response) {
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    try {
+      const flow = startYandexOAuth();
+      res.cookie(YANDEX_COOKIE, flow.cookie, {
+        ...yandexCookieOptions(),
+        maxAge: flow.maxAge,
+      });
+      return res.redirect(flow.url);
+    } catch (error) {
+      res.clearCookie(YANDEX_COOKIE, yandexCookieOptions());
+      return this.yandexErrorRedirect(res, error);
+    }
+  }
+
+  @Get('yandex/callback')
+  @ApiOperation({ summary: 'Complete Yandex ID OAuth authentication' })
+  @ApiResponse({ status: 302, description: 'Redirects to the frontend' })
+  async yandexCallback(@Req() req: Request, @Res() res: Response) {
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.clearCookie(YANDEX_COOKIE, yandexCookieOptions());
+    try {
+      const verifier = verifyYandexState(req.headers.cookie, req.query.state);
+      if (req.query.error) throw new YandexAuthError('yandex_access_denied');
+      if (typeof req.query.code !== 'string' || !req.query.code)
+        throw new YandexAuthError('yandex_code_missing');
+      const result = await this.authService.loginWithYandexCode(
+        req.query.code,
+        verifier,
+      );
+      const url = new URL(
+        '/auth/callback',
+        process.env.FRONTEND_URL || 'http://localhost:3000',
+      );
+      url.searchParams.set('provider', 'yandex');
+      url.hash = new URLSearchParams({
+        access_token: result.access_token,
+        ...result.user,
+      }).toString();
+      return res.redirect(url.toString());
+    } catch (error) {
+      return this.yandexErrorRedirect(res, error);
+    }
+  }
+
+  private yandexErrorRedirect(res: Response, error: unknown) {
+    const url = new URL(
+      '/login',
+      process.env.FRONTEND_URL || 'http://localhost:3000',
+    );
+    url.searchParams.set(
+      'error',
+      error instanceof YandexAuthError ? error.code : 'yandex_auth_failed',
+    );
+    return res.redirect(url.toString());
   }
 
   @Get('google')
