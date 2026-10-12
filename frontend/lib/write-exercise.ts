@@ -204,7 +204,7 @@ export function getModuleTermsFingerprint(terms: Term[]) {
 }
 
 export function getWriteSessionStorageKey(moduleId: string) {
-  return `flashcards2:write:${moduleId}`;
+  return `dictcards:write:${moduleId}`;
 }
 
 export function saveWriteSession(

@@ -1,11 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { FlashcardsController } from './flashcards.controller';
-import { FlashcardsService } from './flashcards.service';
+import { DictcardsController } from './dictcards.controller';
+import { DictcardsService } from './dictcards.service';
 import type { JwtUser } from '../auth/interfaces/jwt-user.interface';
 
-describe('FlashcardsController', () => {
-  let controller: FlashcardsController;
-  let flashcardsService: {
+describe('DictcardsController', () => {
+  let controller: DictcardsController;
+  let dictcardsService: {
     findAll: jest.Mock;
   };
 
@@ -15,21 +15,21 @@ describe('FlashcardsController', () => {
   };
 
   beforeEach(async () => {
-    flashcardsService = {
+    dictcardsService = {
       findAll: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      controllers: [FlashcardsController],
+      controllers: [DictcardsController],
       providers: [
         {
-          provide: FlashcardsService,
-          useValue: flashcardsService,
+          provide: DictcardsService,
+          useValue: dictcardsService,
         },
       ],
     }).compile();
 
-    controller = module.get<FlashcardsController>(FlashcardsController);
+    controller = module.get<DictcardsController>(DictcardsController);
   });
 
   it('should be defined', () => {
@@ -37,10 +37,10 @@ describe('FlashcardsController', () => {
   });
 
   it('passes the authenticated user into list queries', async () => {
-    flashcardsService.findAll.mockResolvedValue([]);
+    dictcardsService.findAll.mockResolvedValue([]);
 
     await controller.findAll(user, '10', '5');
 
-    expect(flashcardsService.findAll).toHaveBeenCalledWith(user, 10, 5);
+    expect(dictcardsService.findAll).toHaveBeenCalledWith(user, 10, 5);
   });
 });

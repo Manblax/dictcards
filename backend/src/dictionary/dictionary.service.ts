@@ -88,7 +88,7 @@ export class DictionaryService {
       headers: {
         'User-Agent':
           process.env.DICTIONARY_USER_AGENT ||
-          'Mozilla/5.0 (compatible; FlashcardsDictionaryBot/1.0; +https://localhost)',
+          'Mozilla/5.0 (compatible; DictcardsDictionaryBot/1.0; +https://localhost)',
       },
     });
   }

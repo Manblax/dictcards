@@ -109,7 +109,7 @@ fi
 
 "${compose[@]}" pull
 
-frontend_image="ghcr.io/manblax/flashcards2-frontend:${IMAGE_TAG}"
+frontend_image="ghcr.io/manblax/dictcards-frontend:${IMAGE_TAG}"
 built_api_url="$(
   docker image inspect "${frontend_image}" \
     --format '{{range .Config.Env}}{{println .}}{{end}}' |

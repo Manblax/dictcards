@@ -48,7 +48,7 @@ describe("api utilities", () => {
     await expect(getModules(20, 10)).resolves.toEqual([{ id: "module-1" }]);
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("http://localhost:3001/flashcards?skip=20&take=10");
+    expect(url).toBe("http://localhost:3001/dictcards?skip=20&take=10");
     expect(init.headers.get("Authorization")).toBe("Bearer stored-token");
   });
 
@@ -122,7 +122,7 @@ describe("api utilities", () => {
       deleteModule("module-1", { token: "token-1" }),
     ).resolves.toEqual({ ok: true });
 
-    expect(fetchMock.mock.calls[0][0]).toBe("http://localhost:3001/flashcards");
+    expect(fetchMock.mock.calls[0][0]).toBe("http://localhost:3001/dictcards");
     expect(fetchMock.mock.calls[0][1]).toMatchObject({
       method: "POST",
       body: JSON.stringify({ title: "Phrasal verbs" }),
@@ -131,7 +131,7 @@ describe("api utilities", () => {
       "Bearer token-1",
     );
     expect(fetchMock.mock.calls[1][0]).toBe(
-      "http://localhost:3001/flashcards/module-1",
+      "http://localhost:3001/dictcards/module-1",
     );
     expect(fetchMock.mock.calls[1][1]).toMatchObject({
       method: "PATCH",

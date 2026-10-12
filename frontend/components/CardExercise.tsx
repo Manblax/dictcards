@@ -369,7 +369,7 @@ function CardFace({
 
   return (
     <section
-      className={`col-start-1 row-start-1 flashcard-face min-w-0 grid grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-panel-strong)] shadow-[0_18px_45px_var(--app-shadow)] [backface-visibility:hidden] ${
+      className={`col-start-1 row-start-1 dictcard-face min-w-0 grid grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-panel-strong)] shadow-[0_18px_45px_var(--app-shadow)] [backface-visibility:hidden] ${
         isDefinition ? "[transform:rotateX(180deg)]" : ""
       } ${active ? "" : "pointer-events-none"}`}
       aria-hidden={!active}

@@ -124,7 +124,7 @@ export function getCardProgress(state: CardExerciseState) {
 }
 
 export function getCardSessionStorageKey(moduleId: string) {
-  return `flashcards2:card:${moduleId}`;
+  return `dictcards:card:${moduleId}`;
 }
 
 export function saveCardSession(

@@ -12,9 +12,9 @@ async function bootstrap() {
   });
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('FlashCards API')
+    .setTitle('dictcards API')
     .setDescription(
-      'API for authentication, flashcard modules, and dictionary lookups',
+      'API for authentication, dictcard modules, and dictionary lookups',
     )
     .setVersion('1.0')
     .addBearerAuth()

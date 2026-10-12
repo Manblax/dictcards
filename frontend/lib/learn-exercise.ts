@@ -301,7 +301,7 @@ export function getLearnStageTermIds(state: LearnExerciseState) {
 }
 
 export function getLearnSessionStorageKey(moduleId: string) {
-  return `flashcards2:learn:${moduleId}`;
+  return `dictcards:learn:${moduleId}`;
 }
 
 export function saveLearnSession(

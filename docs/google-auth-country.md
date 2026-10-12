@@ -64,7 +64,7 @@ npm --prefix frontend test
 npm --prefix frontend run build
 npm --prefix frontend run geoip:update
 npm --prefix frontend run test:e2e -- e2e/login.spec.ts e2e/register.spec.ts e2e/auth-flows.spec.ts e2e/auth-country.spec.ts
-docker build -t flashcards2-frontend:geoip-check frontend
+docker build -t dictcards-frontend:geoip-check frontend
 ```
 
 Browser tests set `X-Real-IP` directly because their Next.js server has no Nginx.

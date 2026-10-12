@@ -1,5 +1,5 @@
 {
-  "name": "flashcards2-workspace",
+  "name": "dictcards-workspace",
   "private": true,
   "scripts": {
     "test": "npm run test:backend && npm run test:dictionary && npm run test:frontend",

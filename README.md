@@ -1,4 +1,4 @@
-# FlashCards2
+# dictcards
 
 Веб-приложение для создания собственных наборов терминов, работы со словарными
 подсказками и изучения материала в интерактивных режимах.
@@ -62,7 +62,7 @@ Docker Compose требует файл `backend/.env`, даже если бол�
 переопределяется в `docker-compose.yml`:
 
 ```dotenv
-DATABASE_URL=postgresql://myuser:mypassword@postgres:5432/flashcards_db
+DATABASE_URL=postgresql://myuser:mypassword@postgres:5432/dictcards_db
 JWT_SECRET=dev-secret-change-me
 FRONTEND_URL=http://localhost:3000
 GOOGLE_CALLBACK_URL=http://localhost:3001/auth/google/callback
@@ -103,6 +103,24 @@ docker compose ps
 docker compose logs -f frontend backend dictionary-service
 ```
 
+### Восстановление резервной копии PostgreSQL
+
+Восстанавливайте custom-format dump в пустую базу `dictcards_db` до запуска
+backend. Укажите путь к нужному архиву и проверьте его контрольную сумму:
+
+```bash
+backup_file="backups/dictcards_db_<timestamp>.dump"
+(cd "$(dirname "$backup_file")" && shasum -a 256 -c "$(basename "$backup_file").sha256") &&
+docker compose up -d --wait postgres &&
+docker compose exec -T postgres pg_restore \
+  --username=myuser --dbname=dictcards_db \
+  --no-owner --no-privileges --exit-on-error < "$backup_file"
+```
+
+Здесь намеренно отсутствует `--create`: восстановление использует указанную
+базу `dictcards_db`, а не исходное имя базы внутри архива. После успешного
+восстановления можно запускать остальные сервисы.
+
 ## Локальный запуск без полного Compose-стека
 
 ### 1. Установите зависимости
@@ -123,7 +141,7 @@ docker compose up -d postgres
 базы через `localhost`:
 
 ```dotenv
-DATABASE_URL=postgresql://myuser:mypassword@localhost:5432/flashcards_db
+DATABASE_URL=postgresql://myuser:mypassword@localhost:5432/dictcards_db
 JWT_SECRET=dev-secret-change-me
 FRONTEND_URL=http://localhost:3000
 GOOGLE_CALLBACK_URL=http://localhost:3001/auth/google/callback
@@ -167,7 +185,7 @@ npm --prefix frontend run dev
 6. Упражнение заканчивается, когда все термины отвечены правильно.
 
 Состояние хранится в `sessionStorage` под ключом
-`flashcards2:write:<moduleId>`. Оно сбрасывается при изменении состава модуля,
+`dictcards:write:<moduleId>`. Оно сбрасывается при изменении состава модуля,
 явном перезапуске или закрытии вкладки.
 
 ## API
@@ -186,11 +204,11 @@ npm --prefix frontend run dev
 
 ### Модули
 
-- `GET /flashcards?skip=0&take=20`
-- `GET /flashcards/:id`
-- `POST /flashcards`
-- `PATCH /flashcards/:id`
-- `DELETE /flashcards/:id`
+- `GET /dictcards?skip=0&take=20`
+- `GET /dictcards/:id`
+- `POST /dictcards`
+- `PATCH /dictcards/:id`
+- `DELETE /dictcards/:id`
 
 ### Словарь и файлы
 
@@ -232,7 +250,7 @@ Jest, browser E2E — Playwright.
 ## Структура репозитория
 
 ```text
-flashcards2/
+dictcards/
 ├── frontend/
 │   ├── app/                    # Next.js App Router
 │   ├── components/             # UI и layout-компоненты
@@ -241,7 +259,7 @@ flashcards2/
 │   └── types/
 ├── backend/
 │   ├── src/auth/               # JWT, Google OAuth и Яндекс ID
-│   ├── src/flashcards/         # CRUD модулей и терминов
+│   ├── src/dictcards/          # CRUD модулей и терминов
 │   ├── src/dictionary/         # Кеш и проксирование словаря
 │   ├── src/uploads/            # Загрузка изображений
 │   └── prisma/                 # Схема и миграции
@@ -263,6 +281,11 @@ Production Compose использует образы GHCR с неизменяе�
 cp .env.production.example .env.production
 ./scripts/init-production-tls.sh .env.production
 ```
+
+При переходе существующего production-развёртывания на `dictcards-production`
+сначала перенесите данные PostgreSQL, загруженные файлы и TLS-хранилище в тома
+нового проекта, подготовьте сертификат с именем `dictcards` и опубликуйте образы
+`ghcr.io/manblax/dictcards-*` с выбранным `IMAGE_TAG`. Затем запускайте deployment.
 
 Последующие обновления:
 

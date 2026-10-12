@@ -1,4 +1,4 @@
-# FlashCards2 Frontend: обзор архитектуры
+# dictcards Frontend: обзор архитектуры
 
 Frontend находится в `frontend/` и построен на Next.js App Router. Он сочетает
 Server Components для защищённой загрузки данных и Client Components для форм,
@@ -93,7 +93,7 @@ Cookie намеренно не является httpOnly, потому что е
 - позволяет импортировать несколько карточек из текста;
 - загружает изображения через `/upload`;
 - запрашивает определения через `/dictionary/lookup`;
-- отправляет весь модуль через `POST /flashcards` или `PATCH /flashcards/:id`.
+- отправляет весь модуль через `POST /dictcards` или `PATCH /dictcards/:id`.
 
 Backend при обновлении пересоздаёт термины, поэтому frontend не должен считать
 ID термина постоянным после сохранения.
@@ -141,7 +141,7 @@ ID термина постоянным после сохранения.
 Состояние хранится в `sessionStorage`:
 
 ```text
-flashcards2:write:<moduleId>
+dictcards:write:<moduleId>
 ```
 
 Payload содержит номер версии, fingerprint терминов, активную очередь,
@@ -172,7 +172,7 @@ Payload содержит номер версии, fingerprint терминов, 
 | `preferred-theme` | localStorage | Активная тема |
 | `preferred-dictionary-source` | localStorage | Cambridge или Oxford |
 | `preferred-pronunciation-variant` | localStorage | UK или US |
-| `flashcards2:write:<moduleId>` | sessionStorage | Состояние write-сессии |
+| `dictcards:write:<moduleId>` | sessionStorage | Состояние write-сессии |
 
 Имена ключей тем и словаря также экспортируются из соответствующих файлов
 `lib/`; при изменении следует обновить эту таблицу.

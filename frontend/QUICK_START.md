@@ -9,7 +9,7 @@ Frontend не использует mock data в runtime: для регистра
 Создайте `backend/.env`:
 
 ```dotenv
-DATABASE_URL=postgresql://myuser:mypassword@postgres:5432/flashcards_db
+DATABASE_URL=postgresql://myuser:mypassword@postgres:5432/dictcards_db
 JWT_SECRET=dev-secret-change-me
 FRONTEND_URL=http://localhost:3000
 GOOGLE_CALLBACK_URL=http://localhost:3001/auth/google/callback

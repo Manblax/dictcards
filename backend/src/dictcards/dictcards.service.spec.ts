@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { FlashcardsService } from './flashcards.service';
+import { DictcardsService } from './dictcards.service';
 import { PrismaService } from '../prisma/prisma.service';
 import type { JwtUser } from '../auth/interfaces/jwt-user.interface';
 
-describe('FlashcardsService', () => {
-  let service: FlashcardsService;
+describe('DictcardsService', () => {
+  let service: DictcardsService;
   let prisma: {
     module: {
       findMany: jest.Mock;
@@ -29,7 +29,7 @@ describe('FlashcardsService', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        FlashcardsService,
+        DictcardsService,
         {
           provide: PrismaService,
           useValue: prisma,
@@ -37,7 +37,7 @@ describe('FlashcardsService', () => {
       ],
     }).compile();
 
-    service = module.get<FlashcardsService>(FlashcardsService);
+    service = module.get<DictcardsService>(DictcardsService);
   });
 
   it('should be defined', () => {

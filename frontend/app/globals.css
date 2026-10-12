@@ -304,7 +304,7 @@ body {
     min-width: 0;
   }
 
-  .flashcard-face {
+  .dictcard-face {
     height: clamp(18rem, calc(100dvh - 18rem), 38rem);
   }
 
@@ -368,7 +368,7 @@ body {
 }
 
 @media (min-width: 80rem) {
-  .flashcard-face {
+  .dictcard-face {
     height: clamp(18rem, calc(100dvh - 23rem), 38rem);
   }
 }
@@ -569,7 +569,7 @@ body {
     padding: 1rem;
   }
 
-  .mobile-study-page .flashcard-face {
+  .mobile-study-page .dictcard-face {
     padding: 0;
     height: clamp(15rem, calc(100dvh - 15rem), 42rem);
   }

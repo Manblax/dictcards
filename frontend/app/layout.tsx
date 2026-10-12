@@ -6,7 +6,7 @@ import ThemeSync from "@/components/ThemeSync";
 import { getServerAuthToken } from "@/lib/server-auth";
 
 export const metadata: Metadata = {
-  title: "FlashCards2",
+  title: "dictcards",
   description: "Приложение для изучения с флэш-карточками",
 };
 

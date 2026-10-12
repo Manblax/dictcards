@@ -101,7 +101,7 @@ export async function getModules(
     return [];
   }
 
-  const res = await apiFetch(`/flashcards?skip=${skip}&take=${take}`, {
+  const res = await apiFetch(`/dictcards?skip=${skip}&take=${take}`, {
     cache: "no-store",
   }, authToken);
   
@@ -126,7 +126,7 @@ export async function getModule(
     return null;
   }
 
-  const res = await apiFetch(`/flashcards/${id}`, {
+  const res = await apiFetch(`/dictcards/${id}`, {
     cache: "no-store",
   }, authToken);
   
@@ -141,7 +141,7 @@ export async function createModule(
   data: any,
   options: RequestOptions = {},
 ): Promise<Module> {
-  const res = await apiFetch("/flashcards", {
+  const res = await apiFetch("/dictcards", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -159,7 +159,7 @@ export async function updateModule(
   data: any,
   options: RequestOptions = {},
 ): Promise<Module> {
-  const res = await apiFetch(`/flashcards/${id}`, {
+  const res = await apiFetch(`/dictcards/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -173,7 +173,7 @@ export async function updateModule(
 }
 
 export async function deleteModule(id: string, options: RequestOptions = {}) {
-  const res = await apiFetch(`/flashcards/${id}`, {
+  const res = await apiFetch(`/dictcards/${id}`, {
     method: "DELETE",
   }, options.token);
   

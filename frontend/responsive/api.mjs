@@ -20,10 +20,10 @@ createServer((req, res) => {
   if (url.pathname.startsWith('/dictionary')) {
     return res.end(JSON.stringify({ word: 'test', definitions: [], ipa: {}, audio: {}, cached: true }));
   }
-  if (url.pathname === '/flashcards') {
+  if (url.pathname === '/dictcards') {
     return res.end(JSON.stringify(Array.from({ length: 6 }, (_, i) => ({ ...module, id: i ? `module-${i}` : module.id }))));
   }
-  if (url.pathname.startsWith('/flashcards/')) {
+  if (url.pathname.startsWith('/dictcards/')) {
     const stress = url.pathname.endsWith('/stress');
     return res.end(JSON.stringify(stress ? { ...module, id: 'stress', title: 'LongTitle'.repeat(25), description: 'LongDescription'.repeat(30), author: 'LongAuthor'.repeat(12), terms: terms.map(t => ({ ...t, term: 'LongTerm'.repeat(20), definition: 'LongDefinition'.repeat(30) })) } : module));
   }

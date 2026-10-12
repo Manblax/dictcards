@@ -27,7 +27,7 @@ requested accent is missing, even if the dictionary has the other accent.
 1. Select or create a Google Cloud project, enable billing, and enable the
    **Cloud Text-to-Speech API** (`texttospeech.googleapis.com`).
 2. Configure Application Default Credentials (ADC). These credentials are
-   separate from the Google OAuth credentials used to sign in to Flashcards.
+   separate from the Google OAuth credentials used to sign in to Dictcards.
 3. Set `TTS_VOICE_UK` and `TTS_VOICE_US` if overriding the defaults
    `en-GB-Chirp3-HD-Achernar` and `en-US-Chirp3-HD-Achernar`. Voice names must match their locale.
 

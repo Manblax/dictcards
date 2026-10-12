@@ -1,12 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
-import { CreateFlashcardDto } from './dto/create-flashcard.dto';
-import { UpdateFlashcardDto } from './dto/update-flashcard.dto';
+import { CreateDictcardDto } from './dto/create-dictcard.dto';
+import { UpdateDictcardDto } from './dto/update-dictcard.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import type { JwtUser } from '../auth/interfaces/jwt-user.interface';
 
 @Injectable()
-export class FlashcardsService {
+export class DictcardsService {
   constructor(private prisma: PrismaService) {}
 
   private moduleAccessWhere(user: JwtUser, id?: string): Prisma.ModuleWhereInput {
@@ -19,16 +19,16 @@ export class FlashcardsService {
     };
   }
 
-  create(user: JwtUser, createFlashcardDto: CreateFlashcardDto) {
+  create(user: JwtUser, createDictcardDto: CreateDictcardDto) {
     return this.prisma.module.create({
       data: {
-        title: createFlashcardDto.title,
-        description: createFlashcardDto.description,
+        title: createDictcardDto.title,
+        description: createDictcardDto.description,
         author: user.username,
-        termCount: createFlashcardDto.terms?.length || 0,
+        termCount: createDictcardDto.terms?.length || 0,
         userId: user.userId,
         terms: {
-          create: createFlashcardDto.terms?.map((term, position) => ({
+          create: createDictcardDto.terms?.map((term, position) => ({
             term: term.term,
             definition: term.definition,
             image: term.image,
@@ -70,8 +70,8 @@ export class FlashcardsService {
     return module;
   }
 
-  async update(user: JwtUser, id: string, updateFlashcardDto: UpdateFlashcardDto) {
-    const { terms, title, description } = updateFlashcardDto;
+  async update(user: JwtUser, id: string, updateDictcardDto: UpdateDictcardDto) {
+    const { terms, title, description } = updateDictcardDto;
 
     return this.prisma.$transaction(async (tx) => {
       const existingModule = await tx.module.findFirst({

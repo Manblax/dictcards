@@ -1,4 +1,4 @@
-name: flashcards2-production
+name: dictcards-production
 
 services:
   postgres:
@@ -21,7 +21,7 @@ services:
       - private
 
   dictionary-service:
-    image: ghcr.io/manblax/flashcards2-dictionary-service:${IMAGE_TAG:?Set IMAGE_TAG to a published sha-* tag}
+    image: ghcr.io/manblax/dictcards-dictionary-service:${IMAGE_TAG:?Set IMAGE_TAG to a published sha-* tag}
     restart: unless-stopped
     environment:
       PORT: 4000
@@ -42,7 +42,7 @@ services:
       - private
 
   backend-migrate:
-    image: ghcr.io/manblax/flashcards2-backend:${IMAGE_TAG:?Set IMAGE_TAG to a published sha-* tag}
+    image: ghcr.io/manblax/dictcards-backend:${IMAGE_TAG:?Set IMAGE_TAG to a published sha-* tag}
     restart: "no"
     command:
       - ./node_modules/.bin/prisma
@@ -57,7 +57,7 @@ services:
       - private
 
   backend:
-    image: ghcr.io/manblax/flashcards2-backend:${IMAGE_TAG:?Set IMAGE_TAG to a published sha-* tag}
+    image: ghcr.io/manblax/dictcards-backend:${IMAGE_TAG:?Set IMAGE_TAG to a published sha-* tag}
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -99,7 +99,7 @@ services:
       - private
 
   frontend:
-    image: ghcr.io/manblax/flashcards2-frontend:${IMAGE_TAG:?Set IMAGE_TAG to a published sha-* tag}
+    image: ghcr.io/manblax/dictcards-frontend:${IMAGE_TAG:?Set IMAGE_TAG to a published sha-* tag}
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -199,7 +199,7 @@ services:
       - --agree-tos
       - --no-eff-email
       - --cert-name
-      - flashcards2
+      - dictcards
       - --email
       - ${LETSENCRYPT_EMAIL:?Set LETSENCRYPT_EMAIL}
       - --server

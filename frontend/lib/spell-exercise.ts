@@ -352,7 +352,7 @@ export function getExpectedAnswerDifference(
 }
 
 export function getSpellSessionStorageKey(moduleId: string) {
-  return `flashcards2:spell:${moduleId}`;
+  return `dictcards:spell:${moduleId}`;
 }
 
 export function saveSpellSession(

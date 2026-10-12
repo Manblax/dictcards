@@ -1,4 +1,4 @@
-# FlashCards2 Backend
+# dictcards Backend
 
 NestJS API для авторизации, пользовательских модулей, загрузки изображений и
 доступа к словарным данным. Backend — единственный сервис проекта, который
@@ -22,7 +22,7 @@ NestJS API для авторизации, пользовательских мо�
 | Каталог | Назначение |
 | --- | --- |
 | `src/auth/` | Регистрация, парольный вход, Google OAuth, выпуск и проверка JWT |
-| `src/flashcards/` | CRUD модулей и вложенных терминов с проверкой владельца |
+| `src/dictcards/` | CRUD модулей и вложенных терминов с проверкой владельца |
 | `src/dictionary/` | Кеш словарных ответов, вызов dictionary-service и аудиопрокси |
 | `src/uploads/` | Загрузка файлов и выдача URL из `/uploads` |
 | `src/prisma/` | Общий Prisma client и lifecycle подключения |
@@ -76,11 +76,11 @@ Google OAuth реализован напрямую через OAuth endpoints Go
 
 ### Модули — Bearer JWT обязателен
 
-- `POST /flashcards`
-- `GET /flashcards?skip=0&take=20`
-- `GET /flashcards/:id`
-- `PATCH /flashcards/:id`
-- `DELETE /flashcards/:id`
+- `POST /dictcards`
+- `GET /dictcards?skip=0&take=20`
+- `GET /dictcards/:id`
+- `PATCH /dictcards/:id`
+- `DELETE /dictcards/:id`
 
 ### Словарь
 
@@ -118,7 +118,7 @@ Google OAuth реализован напрямую через OAuth endpoints Go
 Для Docker development создайте `backend/.env`:
 
 ```dotenv
-DATABASE_URL=postgresql://myuser:mypassword@postgres:5432/flashcards_db
+DATABASE_URL=postgresql://myuser:mypassword@postgres:5432/dictcards_db
 JWT_SECRET=dev-secret-change-me
 FRONTEND_URL=http://localhost:3000
 GOOGLE_CALLBACK_URL=http://localhost:3001/auth/google/callback

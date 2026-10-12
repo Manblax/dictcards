@@ -55,7 +55,7 @@ npm --prefix backend run lint            # eslint --fix (rewrites files)
 npm --prefix backend run test:cov
 npm --prefix backend run test:e2e        # separate config: test/jest-e2e.json
 
-npm --prefix backend test -- flashcards.service   # single file (path regex)
+npm --prefix backend test -- dictcards.service   # single file (path regex)
 npm --prefix backend test -- -t "test name"       # single test
 ```
 
@@ -236,7 +236,7 @@ Every mode has the same shape:
   allowed. Unit-test logic here.
 - **UI** `components/<Mode>Exercise.tsx`: `"use client"`, using `useState` and
   `setState(s => fn(s))`.
-- **Progress** lives only in `sessionStorage` under `flashcards2:<mode>:<moduleId>` as
+- **Progress** lives only in `sessionStorage` under `dictcards:<mode>:<moduleId>` as
   `{ version: 1, fingerprint, state }`. The fingerprint is built from the terms'
   `{ id, term, definition }`. A version or fingerprint mismatch, or a failed validation,
   discards the saved session. No progress reaches the backend.
@@ -253,7 +253,7 @@ the header and drawer below 1280px.
 
 ### Module authorization
 
-`moduleAccessWhere()` in `backend/src/flashcards/flashcards.service.ts` scopes every read
+`moduleAccessWhere()` in `backend/src/dictcards/dictcards.service.ts` scopes every read
 and write to:
 
 ```
@@ -332,7 +332,7 @@ dictionary-service reads `PORT` (4000), `DICTIONARY_TIMEOUT_MS` (6000), and
 | `preferred-theme` | localStorage | `frontend/lib/theme.ts` |
 | `preferred-dictionary-source` | localStorage | settings page (`cambridge` \| `oxford`) |
 | `preferred-pronunciation-variant` | localStorage | settings page (`uk` \| `us`, default `uk`) |
-| `flashcards2:<mode>:<moduleId>` | sessionStorage | exercise components |
+| `dictcards:<mode>:<moduleId>` | sessionStorage | exercise components |
 
 ## Known gaps
 

@@ -1,5 +1,5 @@
 const DEFAULT_USER_AGENT =
-  'Mozilla/5.0 (compatible; FlashcardsDictionaryBot/1.0; +https://localhost)';
+  'Mozilla/5.0 (compatible; DictcardsDictionaryBot/1.0; +https://localhost)';
 
 export async function fetchHtml(url: string, timeoutMs: number) {
   const controller = new AbortController();

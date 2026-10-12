@@ -154,7 +154,7 @@ describe("spell exercise state", () => {
     saveSpellSession(sessionStorage, "module-1", terms, state);
 
     expect(getSpellSessionStorageKey("module-1")).toBe(
-      "flashcards2:spell:module-1",
+      "dictcards:spell:module-1",
     );
     expect(loadSpellSession(sessionStorage, "module-1", terms)).toEqual(
       state,

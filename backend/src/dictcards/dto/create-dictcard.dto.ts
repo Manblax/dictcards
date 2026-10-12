@@ -11,7 +11,7 @@ export class CreateTermDto {
   image?: string;
 }
 
-export class CreateFlashcardDto {
+export class CreateDictcardDto {
   @ApiProperty({ example: 'Advanced English vocabulary' })
   title!: string;
 

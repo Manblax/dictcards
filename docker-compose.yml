@@ -1,32 +1,34 @@
+name: dictcards
+
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: flashcards_db
+    container_name: dictcards_db
     restart: always
     environment:
       POSTGRES_USER: myuser
       POSTGRES_PASSWORD: mypassword
-      POSTGRES_DB: flashcards_db
+      POSTGRES_DB: dictcards_db
     ports:
       - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U myuser -d flashcards_db']
+      test: ['CMD-SHELL', 'pg_isready -U myuser -d dictcards_db']
       interval: 5s
       timeout: 5s
       retries: 10
 
   backend:
     image: node:22-bookworm-slim
-    container_name: flashcards_backend
+    container_name: dictcards_backend
     restart: always
     working_dir: /app
     env_file:
       - ./backend/.env
     environment:
       PORT: 3001
-      DATABASE_URL: postgresql://myuser:mypassword@postgres:5432/flashcards_db
+      DATABASE_URL: postgresql://myuser:mypassword@postgres:5432/dictcards_db
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost:3001/auth/google/callback}
       YANDEX_CLIENT_ID: ${YANDEX_CLIENT_ID:-}
@@ -50,7 +52,7 @@ services:
 
   dictionary-service:
     image: node:22-bookworm-slim
-    container_name: flashcards_dictionary_service
+    container_name: dictcards_dictionary_service
     restart: always
     working_dir: /app
     environment:
@@ -65,7 +67,7 @@ services:
 
   frontend:
     image: node:22-bookworm-slim
-    container_name: flashcards_frontend
+    container_name: dictcards_frontend
     restart: always
     working_dir: /app
     environment:
@@ -82,13 +84,15 @@ services:
 
   pgadmin:
     image: dpage/pgadmin4
-    container_name: flashcards_pgadmin
+    container_name: dictcards_pgadmin
     restart: always
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
     ports:
       - '5050:80'
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
     depends_on:
       - postgres
 
@@ -97,3 +101,4 @@ volumes:
   backend_node_modules:
   dictionary_service_node_modules:
   frontend_node_modules:
+  pgadmin_data:

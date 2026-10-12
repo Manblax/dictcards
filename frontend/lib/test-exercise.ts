@@ -326,7 +326,7 @@ export function getTestScore(state: TestExerciseState, terms: Term[]) {
 }
 
 export function getTestSessionStorageKey(moduleId: string) {
-  return `flashcards2:test:${moduleId}`;
+  return `dictcards:test:${moduleId}`;
 }
 
 export function saveTestSession(
