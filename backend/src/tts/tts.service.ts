@@ -80,6 +80,10 @@ export class TtsService {
     if (cached) return Buffer.from(cached.audio);
     let audio: Buffer;
     try {
+      // The SDK starts initialization in an unawaited promise inside
+      // synthesizeSpeech(). Await it first so credential failures are caught
+      // here instead of becoming unhandled rejections that stop the backend.
+      await this.client.initialize();
       const [response] = await this.client.synthesizeSpeech(request, {
         timeout: 10_000,
         retry: null,

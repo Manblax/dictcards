@@ -7,6 +7,7 @@ jest.mock('@google-cloud/text-to-speech', () => ({
 
 describe('TtsService', () => {
   let service: TtsService;
+  let initialize: jest.Mock;
   let synthesize: jest.Mock;
   let prisma: any;
   const input = { text: ' hello ', variant: 'uk' };
@@ -14,10 +15,12 @@ describe('TtsService', () => {
   beforeEach(() => {
     delete process.env.TTS_VOICE_UK;
     delete process.env.TTS_VOICE_US;
+    initialize = jest.fn().mockResolvedValue(undefined);
     synthesize = jest
       .fn()
       .mockResolvedValue([{ audioContent: Buffer.from('mp3') }]);
     (TextToSpeechClient as unknown as jest.Mock).mockImplementation(() => ({
+      initialize,
       synthesizeSpeech: synthesize,
     }));
     prisma = {
@@ -74,6 +77,7 @@ describe('TtsService', () => {
       status: 400,
     });
     expect(synthesize).not.toHaveBeenCalled();
+    expect(initialize).not.toHaveBeenCalled();
   });
 
   it('accepts exactly 4000 bytes as plain text', async () => {
@@ -102,7 +106,65 @@ describe('TtsService', () => {
       service.synthesize('b', input),
     ]);
     expect(synthesize).toHaveBeenCalledTimes(1);
+    expect(initialize).toHaveBeenCalledTimes(1);
     expect(prisma.ttsAudio.upsert).toHaveBeenCalledTimes(1);
+  });
+
+  it('waits for initialization before calling the speech API', async () => {
+    let ready!: () => void;
+    initialize.mockReturnValue(
+      new Promise<void>((resolve) => {
+        ready = resolve;
+      }),
+    );
+    const pending = service.synthesize('a', input);
+    await Promise.resolve();
+    expect(initialize).toHaveBeenCalledTimes(1);
+    expect(synthesize).not.toHaveBeenCalled();
+    ready();
+    await expect(pending).resolves.toEqual(Buffer.from('mp3'));
+  });
+
+  it('handles credential initialization failures without calling the speech API', async () => {
+    initialize.mockRejectedValue(
+      new Error('Could not load the default credentials'),
+    );
+    for (let attempt = 0; attempt < 2; attempt++) {
+      await expect(service.synthesize('a', input)).rejects.toMatchObject({
+        status: 502,
+      });
+    }
+    expect(initialize).toHaveBeenCalledTimes(2);
+    expect(synthesize).not.toHaveBeenCalled();
+    expect(prisma.ttsAudio.upsert).not.toHaveBeenCalled();
+
+    prisma.ttsAudio.findUnique.mockResolvedValue({ audio: Buffer.from('cached') });
+    await expect(service.synthesize('a', input)).resolves.toEqual(
+      Buffer.from('cached'),
+    );
+    expect(initialize).toHaveBeenCalledTimes(2);
+  });
+
+  it('contains missing-credential errors from the real Google SDK', async () => {
+    const { TextToSpeechClient: RealClient } = jest.requireActual<
+      typeof import('@google-cloud/text-to-speech')
+    >('@google-cloud/text-to-speech');
+    (TextToSpeechClient as unknown as jest.Mock).mockImplementationOnce(
+      () =>
+        new RealClient({
+          keyFilename: `${__filename}.missing-credentials.json`,
+        }),
+    );
+    const withoutCredentials = new TtsService(prisma);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      await expect(
+        withoutCredentials.synthesize('a', input),
+      ).rejects.toMatchObject({ status: 502 });
+    }
+    // Let detached promise rejections surface: a caught HTTP error alone did
+    // not prevent the SDK from crashing Node on the next event-loop turn.
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(prisma.ttsAudio.upsert).not.toHaveBeenCalled();
   });
 
   it.each([new Error('deadline exceeded'), new Error('permission denied')])(

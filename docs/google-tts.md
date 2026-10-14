@@ -69,6 +69,13 @@ is configured. Configure Google billing budgets and monitor Text-to-Speech API
 usage in the Google Cloud console. This change does not create cloud resources
 or enable billing automatically.
 
+If `/tts` returns 502 with missing-credential errors, check that the backend was
+started with `docker-compose.tts.yml` as shown above. Setting
+`TTS_CREDENTIALS_FILE` in `.env` alone does not mount credentials when using only
+the base Compose file. Recreate the backend with the overlay after configuring
+credentials. Credential initialization failures are handled as HTTP errors;
+the backend, dictionary lookups, and previously cached speech remain available.
+
 ## API and cache
 
 `POST /tts` requires the existing bearer JWT and JSON
