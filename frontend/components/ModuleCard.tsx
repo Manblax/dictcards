@@ -39,12 +39,8 @@ const ModuleCard = ({ module }: ModuleCardProps) => {
               </span>
               <span>•</span>
               <div className="flex min-w-0 items-center gap-1">
-                <div className="avatar placeholder">
-                  <div className="bg-warning text-warning-content rounded-full w-5 h-5">
-                    <span className="text-xs font-semibold">
-                      {module.author.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
+                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-warning text-xs font-bold text-warning-content">
+                  {module.author.charAt(0).toUpperCase()}
                 </div>
                 <span className="min-w-0 break-words">Автор: {module.author}</span>
               </div>
