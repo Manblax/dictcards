@@ -22,7 +22,7 @@ describe("Header", () => {
   it("renders guest branding and auth links", () => {
     render(<Header isAuthenticated={false} />);
 
-    expect(screen.getByRole("link", { name: "Q" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "DictCards" })).toHaveAttribute(
       "href",
       "/",
     );

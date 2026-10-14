@@ -1,4 +1,5 @@
 import ModuleCard from "@/components/ModuleCard";
+import BrandLogo from "@/components/BrandLogo";
 import { getModules } from "@/lib/api";
 import { getServerAuthToken } from "@/lib/server-auth";
 import { Module } from "@/types/module";
@@ -46,19 +47,7 @@ function GuestHome() {
       <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[minmax(0,0.92fr)_minmax(22rem,1fr)]">
         <section className="max-w-xl">
           <div className="mb-7 flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary text-primary-content">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                className="h-6 w-6"
-                aria-hidden="true"
-              >
-                <path d="M9 3v18m6-18v18M3 9h18M3 15h18" />
-              </svg>
-            </div>
-            <span className="text-2xl font-bold text-[var(--app-text-strong)]">Q</span>
+            <BrandLogo size={64} />
           </div>
 
           <h1 className="max-w-2xl text-3xl font-bold leading-tight tracking-normal text-[var(--app-text-strong)] sm:text-5xl">

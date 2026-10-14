@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import UserMenu from "./UserMenu";
+import BrandLogo from "@/components/BrandLogo";
 
 interface HeaderProps {
   isAuthenticated: boolean;
@@ -39,7 +40,7 @@ const Header = ({ isAuthenticated }: HeaderProps) => {
                 className="flex items-center text-xl font-bold text-[var(--app-text-strong)]"
                 aria-label="Главная"
               >
-                Q
+                <BrandLogo />
               </Link>
             </div>
 
@@ -66,19 +67,7 @@ const Header = ({ isAuthenticated }: HeaderProps) => {
           </>
         ) : (
           <Link href="/" className="flex items-center gap-3 text-[var(--app-text-strong)]">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-content">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                className="h-5 w-5"
-                aria-hidden="true"
-              >
-                <path d="M9 3v18m6-18v18M3 9h18M3 15h18" />
-              </svg>
-            </span>
-            <span className="text-xl font-bold">Q</span>
+            <BrandLogo />
           </Link>
         )}
 
