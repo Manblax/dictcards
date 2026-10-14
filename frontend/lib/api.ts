@@ -93,7 +93,7 @@ export function getYandexAuthUrl() {
 export async function getModules(
   skip = 0,
   take = 20,
-  options: RequestOptions = {},
+  options: RequestOptions & { query?: string } = {},
 ): Promise<Module[]> {
   const authToken = resolveAuthToken(options.token);
 
@@ -101,7 +101,12 @@ export async function getModules(
     return [];
   }
 
-  const res = await apiFetch(`/dictcards?skip=${skip}&take=${take}`, {
+  const params = new URLSearchParams({ skip: String(skip), take: String(take) });
+  if (options.query?.trim()) {
+    params.set("q", options.query.trim());
+  }
+
+  const res = await apiFetch(`/dictcards?${params}`, {
     cache: "no-store",
   }, authToken);
   

@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import Header from "./Header";
@@ -34,6 +35,19 @@ describe("Header", () => {
       "href",
       "/register",
     );
+  });
+
+  it("searches module titles on Enter or the search button", async () => {
+    const user = userEvent.setup();
+    render(<Header isAuthenticated />);
+
+    await user.type(screen.getByRole("searchbox"), "  Test & lesson  {Enter}");
+    expect(push).toHaveBeenLastCalledWith("/search?q=Test+%26+lesson");
+
+    await user.clear(screen.getByRole("searchbox"));
+    await user.type(screen.getByRole("searchbox"), "Урок");
+    await user.click(screen.getByRole("button", { name: "Найти модули" }));
+    expect(push).toHaveBeenLastCalledWith(`/search?${new URLSearchParams({ q: "Урок" })}`);
   });
 
   it("renders authenticated search and create controls", () => {

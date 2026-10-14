@@ -41,6 +41,12 @@ describe('DictcardsController', () => {
 
     await controller.findAll(user, '10', '5');
 
-    expect(dictcardsService.findAll).toHaveBeenCalledWith(user, 10, 5);
+    expect(dictcardsService.findAll).toHaveBeenCalledWith(user, 10, 5, undefined);
+  });
+
+  it('passes the title query along with pagination and the authenticated user', async () => {
+    await controller.findAll(user, '20', '20', 'Test lesson');
+
+    expect(dictcardsService.findAll).toHaveBeenCalledWith(user, 20, 20, 'Test lesson');
   });
 });

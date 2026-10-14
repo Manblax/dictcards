@@ -52,6 +52,20 @@ describe("api utilities", () => {
     expect(init.headers.get("Authorization")).toBe("Bearer stored-token");
   });
 
+  it("encodes title searches and keeps pagination and authentication", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("[]"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getModules(20, 20, { token: "search-token", query: "  Урок & Test  " });
+
+    const [url, init] = fetchMock.mock.calls[0];
+    const params = new URL(url).searchParams;
+    expect(params.get("q")).toBe("Урок & Test");
+    expect(params.get("skip")).toBe("20");
+    expect(params.get("take")).toBe("20");
+    expect(init.headers.get("Authorization")).toBe("Bearer search-token");
+  });
+
   it("returns an empty module list for unauthorized responses", async () => {
     localStorage.setItem("token", "stored-token");
     vi.stubGlobal(

@@ -112,8 +112,26 @@ describe("InfiniteModuleList", () => {
       await Promise.resolve();
     });
 
-    expect(getModules).toHaveBeenCalledWith(20, 20);
+    expect(getModules).toHaveBeenCalledWith(20, 20, { query: undefined });
     expect(screen.getByText("Loaded Module")).toBeInTheDocument();
     expect(screen.getByText("Все модули загружены")).toBeInTheDocument();
+  });
+
+  it("keeps the title filter when loading more search results and renders module cards", async () => {
+    const initialModules = Array.from({ length: 20 }, (_, index) =>
+      makeModule({ id: `result-${index}`, title: `Lesson ${index}` }),
+    );
+    vi.mocked(getModules).mockResolvedValue([
+      makeModule({ id: "next-result", title: "Lesson 20" }),
+    ]);
+    render(<InfiniteModuleList initialModules={initialModules} query="Lesson" />);
+
+    expect(screen.queryByText("НА ПРОШЛОЙ НЕДЕЛЕ")).not.toBeInTheDocument();
+    await act(async () => {
+      triggerIntersection();
+    });
+
+    expect(getModules).toHaveBeenCalledWith(20, 20, { query: "Lesson" });
+    expect(screen.getByRole("link", { name: /Lesson 20/ })).toHaveAttribute("href", "/module/next-result");
   });
 });

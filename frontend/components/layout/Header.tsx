@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import UserMenu from "./UserMenu";
 import BrandLogo from "@/components/BrandLogo";
 
@@ -9,6 +10,7 @@ interface HeaderProps {
 }
 
 const Header = ({ isAuthenticated }: HeaderProps) => {
+  const router = useRouter();
   return (
     <header className="app-header bg-base-100 border-b border-neutral/30 sticky top-0 z-30">
       <div className="page-container flex h-[calc(var(--app-header-height)-1px)] flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 md:flex-nowrap md:gap-4">
@@ -44,26 +46,44 @@ const Header = ({ isAuthenticated }: HeaderProps) => {
               </Link>
             </div>
 
-            <div className="relative order-last min-w-0 w-full basis-full md:order-none md:max-w-md md:flex-1 md:basis-auto">
+            <form
+              action="/search"
+              role="search"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const query = String(new FormData(event.currentTarget).get("q") ?? "").trim();
+                router.push(`/search?${new URLSearchParams({ q: query })}`);
+              }}
+              className="relative order-last min-w-0 w-full basis-full md:order-none md:max-w-md md:flex-1 md:basis-auto"
+            >
               <input
-                type="text"
+                type="search"
+                name="q"
+                aria-label="Поиск по названию модуля"
                 placeholder="Поиск"
                 className="input h-11 min-h-11 w-full text-base bg-base-200 pl-10"
               />
-              <svg
-                className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-content"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+              <button
+                type="submit"
+                aria-label="Найти модули"
+                className="absolute left-0 top-0 flex h-11 w-10 items-center justify-center rounded-lg text-neutral-content focus-visible:outline-2 focus-visible:outline-primary"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-            </div>
+                <svg
+                  className="w-4 h-4"
+                  aria-hidden="true"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </button>
+            </form>
           </>
         ) : (
           <Link href="/" className="flex items-center gap-3 text-[var(--app-text-strong)]">

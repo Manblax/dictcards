@@ -45,15 +45,18 @@ export class DictcardsController {
   @ApiOperation({ summary: "List the current user's dictcard modules" })
   @ApiQuery({ name: 'skip', required: false, type: Number, minimum: 0 })
   @ApiQuery({ name: 'take', required: false, type: Number, minimum: 1 })
+  @ApiQuery({ name: 'q', required: false, type: String, description: 'Search module titles' })
   findAll(
     @CurrentUser() user: JwtUser,
     @Query('skip') skip?: string,
     @Query('take') take?: string,
+    @Query('q') query?: string,
   ) {
     return this.dictcardsService.findAll(
       user,
       skip ? parseInt(skip, 10) : undefined,
       take ? parseInt(take, 10) : undefined,
+      query,
     );
   }
 

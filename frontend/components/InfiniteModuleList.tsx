@@ -7,6 +7,7 @@ import { getModules } from "@/lib/api";
 
 interface InfiniteModuleListProps {
   initialModules: Module[];
+  query?: string;
 }
 
 interface GroupedModules {
@@ -16,7 +17,7 @@ interface GroupedModules {
 
 const MODULES_PER_PAGE = 20;
 
-const InfiniteModuleList = ({ initialModules = [] }: InfiniteModuleListProps) => {
+const InfiniteModuleList = ({ initialModules = [], query }: InfiniteModuleListProps) => {
   const [displayedModules, setDisplayedModules] = useState<Module[]>(initialModules);
   const [page, setPage] = useState(1); // Страница 1 уже загружена (initialModules)
   const [hasMore, setHasMore] = useState(initialModules.length >= MODULES_PER_PAGE);
@@ -30,7 +31,7 @@ const InfiniteModuleList = ({ initialModules = [] }: InfiniteModuleListProps) =>
 
     try {
       const skip = page * MODULES_PER_PAGE;
-      const newModules = await getModules(skip, MODULES_PER_PAGE);
+      const newModules = await getModules(skip, MODULES_PER_PAGE, { query });
 
       if (newModules.length === 0) {
         setHasMore(false);
@@ -47,7 +48,7 @@ const InfiniteModuleList = ({ initialModules = [] }: InfiniteModuleListProps) =>
     } finally {
       setIsLoading(false);
     }
-  }, [page, isLoading, hasMore]);
+  }, [page, isLoading, hasMore, query]);
 
   // Настраиваем Intersection Observer для бесконечной прокрутки
   useEffect(() => {
@@ -116,7 +117,13 @@ const InfiniteModuleList = ({ initialModules = [] }: InfiniteModuleListProps) =>
 
   return (
     <div>
-      {groupedModules.map((group, index) => (
+      {query !== undefined ? (
+        <div className="flex flex-col gap-3">
+          {displayedModules.map((module) => (
+            <ModuleCard key={module.id} module={module} />
+          ))}
+        </div>
+      ) : groupedModules.map((group, index) => (
         <div key={index} className="mb-9 sm:mb-12">
           <h2 className="mb-4 break-words text-xs font-bold tracking-wider text-neutral-content sm:text-sm">
             {group.title}

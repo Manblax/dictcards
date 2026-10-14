@@ -62,6 +62,30 @@ describe('DictcardsService', () => {
     });
   });
 
+  it('searches titles case-insensitively while retaining access restrictions and pagination', async () => {
+    await service.findAll(user, 20, 20, '  Test Lesson  ');
+
+    expect(prisma.module.findMany).toHaveBeenCalledWith({
+      where: {
+        OR: [{ userId: 'user-1' }, { userId: null, author: 'alice' }],
+        title: { contains: 'Test Lesson', mode: 'insensitive' },
+      },
+      skip: 20,
+      take: 20,
+      orderBy: { createdAt: 'desc' },
+    });
+  });
+
+  it('treats wildcard characters in titles literally', async () => {
+    await service.findAll(user, 0, 20, '100%_done');
+
+    expect(prisma.module.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        title: { contains: '100\\%\\_done', mode: 'insensitive' },
+      }),
+    }));
+  });
+
   it('stores the authenticated user as the module owner on create', async () => {
     prisma.module.create.mockResolvedValue({});
 

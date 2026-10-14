@@ -44,9 +44,19 @@ export class DictcardsService {
     });
   }
 
-  findAll(user: JwtUser, skip?: number, take?: number) {
+  findAll(user: JwtUser, skip?: number, take?: number, query?: string) {
+    const title = query?.trim();
     return this.prisma.module.findMany({
-      where: this.moduleAccessWhere(user),
+      where: {
+        ...this.moduleAccessWhere(user),
+        ...(title ? {
+          title: {
+            // Treat SQL LIKE wildcards as literal characters in module titles.
+            contains: title.replace(/[\\%_]/g, '\\$&'),
+            mode: 'insensitive' as const,
+          },
+        } : {}),
+      },
       skip,
       take,
       orderBy: { createdAt: 'desc' },
