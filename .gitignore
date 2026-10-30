@@ -30,11 +30,41 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
-.env*.local
-/.env
-/.env.*
-!/.env.example
-!/.env.production.example
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Credentials and private keys (at any directory depth)
+*.key
+*.p12
+*.pfx
+*.jks
+id_rsa
+id_ed25519
+credentials.json
+credentials-*.json
+client_secret*.json
+service-account*.json
+service_account*.json
+secrets.json
+secrets.yaml
+secrets.yml
+.secrets/
+.ssh/
+.aws/
+.config/gcloud/
+
+# Local database backups and deployment data
+/backups/
+*.dump
+*.sql.gz
+*.sql.bz2
+*.sql.xz
+*.sqlite
+*.sqlite3
+/letsencrypt/
+/certbot/
 
 # vercel
 .vercel

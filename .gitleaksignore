@@ -1,0 +1,4 @@
+# Exact historical NestJS starter badge token, also present in the upstream
+# nestjs/typescript-starter README. This is not a DictCards credential.
+# Scope the exception to this single finding; future tokens remain checked.
+470c63eb84a5be18c251b44585a39a4ea4ac91e4:backend/README.md:generic-api-key:5
