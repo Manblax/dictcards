@@ -78,6 +78,16 @@ the backend, dictionary lookups, and previously cached speech remain available.
 
 ## API and cache
 
+### Restricted API key on the VPS
+
+The VPS also supports `GOOGLE_TTS_API_KEY`. When set, the backend passes it to
+`TextToSpeechClient`; otherwise it continues to use ADC. The current VPS uses
+an API key restricted to `texttospeech.googleapis.com` and its public IPv4.
+This does not require copying personal ADC credentials or disabling the Google
+Cloud policy that prohibits service-account key creation. Keep the key in the
+server's `.env.vps`, never in `NEXT_PUBLIC_*`, source control, or build arguments.
+If the VPS outbound address changes, update the key's IP restriction.
+
 `POST /tts` requires the existing bearer JWT and JSON
 `{"text":"hello","variant":"uk"}` (or `"us"`). A successful request returns HTTP
 200 with `Content-Type: audio/mpeg`. See `/api/docs` for the endpoint schema.

@@ -1,0 +1,10 @@
+[Unit]
+Description=Renew dictcards TLS certificates and reload Nginx
+Requires=docker.service
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/dictcards
+ExecStart=/opt/dictcards/scripts/renew-vps-tls.sh
+TimeoutStartSec=20min

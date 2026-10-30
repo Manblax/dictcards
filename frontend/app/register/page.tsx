@@ -3,5 +3,5 @@ import RegisterForm from "./RegisterForm";
 
 export default async function RegisterPage() {
   const showGoogleAuth = await shouldShowGoogleAuth();
-  return <RegisterForm showGoogleAuth={showGoogleAuth} />;
+  return <RegisterForm showGoogleAuth={showGoogleAuth} socialAuthEnabled={process.env.SOCIAL_AUTH_ENABLED !== "false"} />;
 }

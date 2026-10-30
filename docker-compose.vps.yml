@@ -1,0 +1,148 @@
+name: dictcards-vps
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "3"
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      POSTGRES_USER: dictcards
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      POSTGRES_DB: dictcards
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U dictcards -d dictcards']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  dictionary-service:
+    image: dictcards-dictionary-service:${IMAGE_TAG:-vps}
+    build: ./dictionary-service
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      PORT: 4000
+      DICTIONARY_TIMEOUT_MS: 6000
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:4000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+
+  backend-migrate:
+    image: dictcards-backend:${IMAGE_TAG:-vps}
+    restart: "no"
+    logging: *logging
+    command: [./node_modules/.bin/prisma, migrate, deploy]
+    environment:
+      DATABASE_URL: postgresql://dictcards:${POSTGRES_PASSWORD}@postgres:5432/dictcards
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  backend:
+    image: dictcards-backend:${IMAGE_TAG:-vps}
+    build: ./backend
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://dictcards:${POSTGRES_PASSWORD}@postgres:5432/dictcards
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
+      FRONTEND_URL: https://${PUBLIC_HOST:-${PUBLIC_IP:?Set PUBLIC_IP}}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_CALLBACK_URL: https://${PUBLIC_HOST:-${PUBLIC_IP}}/auth/google/callback
+      YANDEX_CLIENT_ID: ${YANDEX_CLIENT_ID:-}
+      YANDEX_CLIENT_SECRET: ${YANDEX_CLIENT_SECRET:-}
+      YANDEX_CALLBACK_URL: https://${PUBLIC_HOST:-${PUBLIC_IP}}/auth/yandex/callback
+      GOOGLE_TTS_API_KEY: ${GOOGLE_TTS_API_KEY:-}
+      TTS_VOICE_UK: ${TTS_VOICE_UK:-en-GB-Chirp3-HD-Achernar}
+      TTS_VOICE_US: ${TTS_VOICE_US:-en-US-Chirp3-HD-Achernar}
+      DICTIONARY_SERVICE_URL: http://dictionary-service:4000
+      DICTIONARY_CACHE_TTL_DAYS: 30
+      DICTIONARY_BACKEND_TIMEOUT_MS: 9000
+    volumes:
+      - backend_uploads:/app/uploads
+    depends_on:
+      backend-migrate:
+        condition: service_completed_successfully
+      dictionary-service:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3001/').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 15s
+
+  frontend:
+    image: dictcards-frontend:${IMAGE_TAG:-vps}
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: https://${PUBLIC_HOST:-${PUBLIC_IP}}
+        INTERNAL_API_URL: http://backend:3001
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: https://${PUBLIC_HOST:-${PUBLIC_IP}}
+      INTERNAL_API_URL: http://backend:3001
+      SOCIAL_AUTH_ENABLED: ${SOCIAL_AUTH_ENABLED:-false}
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 20s
+
+  nginx:
+    image: nginx:stable-alpine
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      PUBLIC_IP: ${PUBLIC_IP}
+      PUBLIC_HOST: ${PUBLIC_HOST:-${PUBLIC_IP}}
+      NGINX_ENVSUBST_FILTER: ^(PUBLIC_IP|PUBLIC_HOST)$
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ${NGINX_TEMPLATE:-./deploy/nginx/vps.conf.template}:/etc/nginx/templates/default.conf.template:ro
+      - /var/lib/dictcards/acme:/var/www/certbot:ro
+      - /var/lib/dictcards/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD-SHELL, 'wget -q --spider http://127.0.0.1/healthz || exit 1']
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  certbot:
+    image: certbot/certbot:latest
+    profiles: [tools]
+    volumes:
+      - /var/lib/dictcards/acme:/var/www/certbot
+      - /var/lib/dictcards/letsencrypt:/etc/letsencrypt
+
+volumes:
+  postgres_data:
+  backend_uploads:

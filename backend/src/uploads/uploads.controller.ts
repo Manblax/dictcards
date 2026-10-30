@@ -1,12 +1,15 @@
-import { Controller, Post, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Post, UseInterceptors, UploadedFile, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 
 @Controller('upload')
+@UseGuards(AuthGuard('jwt'))
 export class UploadsController {
   @Post()
   @UseInterceptors(FileInterceptor('file', {
+    limits: { fileSize: 10 * 1024 * 1024, files: 1 },
     storage: diskStorage({
       destination: './uploads',
       filename: (req, file, cb) => {

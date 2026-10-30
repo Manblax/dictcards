@@ -273,6 +273,8 @@ dictcards/
 
 ## Production
 
+Для VPS см. [развёртывание по IP или домену с HTTPS](docs/vps.md).
+
 Production Compose использует образы GHCR с неизменяемыми `sha-*` тегами,
 закрытую Docker-сеть, Nginx и Let’s Encrypt. Публично доступны только порты 80
 и 443.

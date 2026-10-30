@@ -10,6 +10,40 @@ jest.mock('./yandex-oauth', () => ({
   fetchYandexProfile: jest.fn(),
 }));
 
+describe('AuthService registration session', () => {
+  it('returns a usable signed session immediately after registration', async () => {
+    const model = {
+      findFirst: jest.fn().mockResolvedValue(null),
+      create: jest.fn().mockImplementation(async ({ data }) => ({
+        id: 'registered-user',
+        ...data,
+      })),
+    };
+    const tokens = new JwtService({ secret: 'registration-test-secret' });
+    const service = new AuthService(
+      { user: model } as unknown as PrismaService,
+      tokens,
+    );
+
+    const result = await service.register({
+      username: 'new-user',
+      email: 'new@example.com',
+      password: 'test-password',
+    });
+
+    expect(tokens.verify(result.access_token)).toMatchObject({
+      sub: 'registered-user',
+      username: 'new-user',
+    });
+    expect(result.user).toEqual({
+      id: 'registered-user',
+      username: 'new-user',
+      email: 'new@example.com',
+    });
+    expect(await bcrypt.compare('test-password', model.create.mock.calls[0][0].data.password)).toBe(true);
+  });
+});
+
 describe('AuthService identity resolution', () => {
   const profile = jest.mocked(fetchYandexProfile);
   const user = {

@@ -10,7 +10,11 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class TtsService {
-  private readonly client = new TextToSpeechClient();
+  private readonly client = new TextToSpeechClient(
+    process.env.GOOGLE_TTS_API_KEY
+      ? { apiKey: process.env.GOOGLE_TTS_API_KEY }
+      : {},
+  );
   private readonly pending = new Map<string, Promise<Buffer>>();
   private readonly limits = new Map<
     string,

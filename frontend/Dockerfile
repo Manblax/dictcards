@@ -20,6 +20,7 @@ COPY components ./components
 COPY hooks ./hooks
 COPY lib ./lib
 COPY types ./types
+COPY test ./test
 COPY scripts/update-geoip.mjs ./scripts/update-geoip.mjs
 RUN npm run geoip:update
 RUN npm run build
@@ -41,6 +42,7 @@ COPY package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 COPY --from=build /app/.next ./.next
+COPY public ./public
 COPY --from=build /app/.geoip/data ./.geoip/data
 COPY lib/geoip-database.mjs ./lib/geoip-database.mjs
 COPY scripts/update-geoip.mjs ./scripts/update-geoip.mjs

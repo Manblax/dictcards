@@ -10,7 +10,7 @@ import { login, getGoogleAuthUrl } from "@/lib/api";
 import { getStoredUser, persistAuthSession } from "@/lib/auth";
 import { resolveSafeRedirect } from "@/lib/navigation";
 
-function LoginPageContent({ showGoogleAuth }: { showGoogleAuth: boolean }) {
+function LoginPageContent({ showGoogleAuth, socialAuthEnabled = true }: { showGoogleAuth: boolean; socialAuthEnabled?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = resolveSafeRedirect(searchParams.get("redirect"));
@@ -131,8 +131,8 @@ function LoginPageContent({ showGoogleAuth }: { showGoogleAuth: boolean }) {
         {isLoading ? <span className="loading loading-spinner"></span> : "Войти"}
       </button>
 
-      {!showGoogleAuth && <YandexAuthButton />}
-      {showGoogleAuth && <a
+      {socialAuthEnabled && !showGoogleAuth && <YandexAuthButton />}
+      {socialAuthEnabled && showGoogleAuth && <a
         href={getGoogleAuthUrl()}
         className="btn w-full rounded-xl bg-white text-black hover:bg-neutral-100 border border-neutral-300 font-bold"
       >
@@ -200,10 +200,10 @@ function LoginPageFallback() {
   return <LoginPageLayout form={<div className="loading loading-spinner text-primary" />} />;
 }
 
-export default function LoginForm({ showGoogleAuth }: { showGoogleAuth: boolean }) {
+export default function LoginForm({ showGoogleAuth, socialAuthEnabled = true }: { showGoogleAuth: boolean; socialAuthEnabled?: boolean }) {
   return (
     <Suspense fallback={<LoginPageFallback />}>
-      <LoginPageContent showGoogleAuth={showGoogleAuth} />
+      <LoginPageContent showGoogleAuth={showGoogleAuth} socialAuthEnabled={socialAuthEnabled} />
     </Suspense>
   );
 }

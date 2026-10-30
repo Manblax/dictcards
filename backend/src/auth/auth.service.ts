@@ -55,7 +55,7 @@ export class AuthService {
 
     return {
       message: 'User registered successfully',
-      user: { id: user.id, username: user.username, email: user.email },
+      ...this.buildAuthResponse(user),
     };
   }
 

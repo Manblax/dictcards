@@ -9,7 +9,7 @@ import { getGoogleAuthUrl, register } from "@/lib/api";
 import { getStoredUser, persistAuthSession } from "@/lib/auth";
 import { resolveSafeRedirect } from "@/lib/navigation";
 
-function RegisterPageContent({ showGoogleAuth }: { showGoogleAuth: boolean }) {
+function RegisterPageContent({ showGoogleAuth, socialAuthEnabled = true }: { showGoogleAuth: boolean; socialAuthEnabled?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = resolveSafeRedirect(searchParams.get("redirect"));
@@ -148,8 +148,8 @@ function RegisterPageContent({ showGoogleAuth }: { showGoogleAuth: boolean }) {
             {isLoading ? <span className="loading loading-spinner"></span> : "Зарегистрироваться"}
           </button>
 
-          {!showGoogleAuth && <YandexAuthButton registration />}
-          {showGoogleAuth && <a
+          {socialAuthEnabled && !showGoogleAuth && <YandexAuthButton registration />}
+          {socialAuthEnabled && showGoogleAuth && <a
             href={getGoogleAuthUrl()}
             className="btn w-full rounded-xl bg-white text-black hover:bg-neutral-100 border border-neutral-300 font-bold"
           >
@@ -211,10 +211,10 @@ function RegisterPageFallback() {
   return <RegisterPageLayout form={<div className="loading loading-spinner text-primary" />} />;
 }
 
-export default function RegisterForm({ showGoogleAuth }: { showGoogleAuth: boolean }) {
+export default function RegisterForm({ showGoogleAuth, socialAuthEnabled = true }: { showGoogleAuth: boolean; socialAuthEnabled?: boolean }) {
   return (
     <Suspense fallback={<RegisterPageFallback />}>
-      <RegisterPageContent showGoogleAuth={showGoogleAuth} />
+      <RegisterPageContent showGoogleAuth={showGoogleAuth} socialAuthEnabled={socialAuthEnabled} />
     </Suspense>
   );
 }
