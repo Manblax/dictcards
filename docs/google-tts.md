@@ -26,8 +26,9 @@ requested accent is missing, even if the dictionary has the other accent.
 
 1. Select or create a Google Cloud project, enable billing, and enable the
    **Cloud Text-to-Speech API** (`texttospeech.googleapis.com`).
-2. Configure Application Default Credentials (ADC). These credentials are
-   separate from the Google OAuth credentials used to sign in to Dictcards.
+2. Configure Application Default Credentials (ADC), or use the server API-key
+   setup below for the VPS. TTS credentials are separate from the Google OAuth
+   credentials used to sign in to Dictcards.
 3. Set `TTS_VOICE_UK` and `TTS_VOICE_US` if overriding the defaults
    `en-GB-Chirp3-HD-Achernar` and `en-US-Chirp3-HD-Achernar`. Voice names must match their locale.
 
@@ -47,7 +48,7 @@ Ensure the ADC identity can use the selected project's services (including
 `serviceusage.services.use`). See Google's [setup guide](https://docs.cloud.google.com/text-to-speech/docs/get-started)
 and [authentication guide](https://docs.cloud.google.com/text-to-speech/docs/authentication).
 
-For the existing Docker deployment, create a dedicated service account in that
+For Docker deployments using ADC, create a dedicated service account in that
 project and store its credential JSON **outside this repository**. Set
 `TTS_CREDENTIALS_FILE` to its absolute host path in the Compose environment file.
 The optional TTS overlay mounts it read-only at `/run/secrets/tts_credentials`;
@@ -64,21 +65,19 @@ docker compose --env-file .env.production -f docker-compose.production.yml -f do
 ```
 
 The base Compose files still work without Google credentials. Dictionary audio
-continues to work; uncached Google requests report unavailable audio until ADC
-is configured. Configure Google billing budgets and monitor Text-to-Speech API
+continues to work; uncached Google requests report unavailable audio until valid
+TTS credentials are configured. Configure Google billing budgets and monitor Text-to-Speech API
 usage in the Google Cloud console. This change does not create cloud resources
 or enable billing automatically.
 
-If `/tts` returns 502 with missing-credential errors, check that the backend was
+For the ADC setup, if `/tts` returns 502 with missing-credential errors, check that the backend was
 started with `docker-compose.tts.yml` as shown above. Setting
 `TTS_CREDENTIALS_FILE` in `.env` alone does not mount credentials when using only
 the base Compose file. Recreate the backend with the overlay after configuring
 credentials. Credential initialization failures are handled as HTTP errors;
 the backend, dictionary lookups, and previously cached speech remain available.
 
-## API and cache
-
-### Restricted API key on the VPS
+## Restricted API key on the VPS
 
 The VPS also supports `GOOGLE_TTS_API_KEY`. When set, the backend passes it to
 `TextToSpeechClient`; otherwise it continues to use ADC. The current VPS uses
@@ -87,6 +86,13 @@ This does not require copying personal ADC credentials or disabling the Google
 Cloud policy that prohibits service-account key creation. Keep the key in the
 server's `.env.vps`, never in `NEXT_PUBLIC_*`, source control, or build arguments.
 If the VPS outbound address changes, update the key's IP restriction.
+
+`docker-compose.vps.yml` passes this variable to the backend. The GHCR
+`docker-compose.production.yml` does not; its documented credential path uses
+the ADC overlay. Follow [VPS deployment](vps.md) for the API-key configuration
+and [secret handling](security.md) before committing changes.
+
+## API and cache
 
 `POST /tts` requires the existing bearer JWT and JSON
 `{"text":"hello","variant":"uk"}` (or `"us"`). A successful request returns HTTP

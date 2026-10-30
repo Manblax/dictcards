@@ -6,8 +6,8 @@ Server Components для защищённой загрузки данных и C
 
 ## Технологии
 
-- Next.js 16.0.10
-- React 19.2.1
+- Next.js 16
+- React 19
 - TypeScript 5 в strict mode
 - Tailwind CSS 4
 - DaisyUI 5
@@ -15,19 +15,26 @@ Server Components для защищённой загрузки данных и C
 - Vitest, Testing Library и jsdom для unit/component tests
 - Playwright для browser E2E
 
+Точные версии зависимостей зафиксированы в `package-lock.json`.
+
 ## Маршруты
 
 | Маршрут | Рендеринг | Назначение |
 | --- | --- | --- |
 | `/` | Server Component | Гостевой landing или шесть последних модулей |
-| `/register` | Client Component | Регистрация по email, username и паролю |
-| `/login` | Client Component | Парольный вход и запуск Google OAuth |
-| `/auth/callback` | Client Component | Сохранение результата Google OAuth |
+| `/register` | Server + Client | Регистрация и выбор OAuth-провайдера по стране |
+| `/login` | Server + Client | Парольный вход, Google OAuth и Яндекс ID |
+| `/auth/callback` | Client Component | Сохранение результата Google/Яндекс OAuth |
 | `/library` | Server + Client | Первая страница модулей и бесконечная догрузка |
+| `/search?q=...` | Server + Client | Поиск своих модулей по названию с догрузкой |
 | `/create` | Server + Client | Защищённая форма создания модуля |
 | `/module/[id]` | Server Component | Детали модуля, термины и выбор режима |
 | `/module/[id]/edit` | Server + Client | Защищённое редактирование модуля |
+| `/module/[id]/card` | Server + Client | Карточки с переворотом и оценкой |
+| `/module/[id]/learn` | Server + Client | Заучивание |
+| `/module/[id]/test` | Server + Client | Настраиваемый тест |
 | `/module/[id]/write` | Server + Client | Письменное упражнение |
+| `/module/[id]/spell` | Server + Client | Написание термина на слух |
 | `/settings` | Client Component | Аккаунт, тема, словарь и произношение |
 
 Защищённые Server Components читают cookie `token`. Если токена нет, они
@@ -75,6 +82,11 @@ Backend выдаёт JWT на 60 минут. Frontend хранит одну се
 Cookie намеренно не является httpOnly, потому что её синхронизирует браузерный
 код. Это архитектурное ограничение текущей версии.
 
+Регистрация сразу возвращает JWT и профиль, после чего форма сохраняет сессию.
+Серверные страницы `/login` и `/register` выбирают Google или Яндекс по стране.
+`SOCIAL_AUTH_ENABLED=false` в окружении Next.js скрывает обе кнопки; это не
+отключает маршруты OAuth на backend. Подробнее: [видимость кнопок](../docs/google-auth-country.md).
+
 ## Модули и словарь
 
 ### Просмотр и библиотека
@@ -83,6 +95,10 @@ Cookie намеренно не является httpOnly, потому что е
 - `/library` получает первые 20 модулей на сервере.
 - `InfiniteModuleList` догружает следующие страницы при пересечении sentinel.
 - Модули группируются по текущей неделе, прошлой неделе и месяцам.
+- Поиск из header открывает `/search?q=...`. Backend ищет подстроку в названии
+  без учёта регистра и сохраняет ограничение по владельцу.
+- Результаты поиска используют `InfiniteModuleList` с `query`; догрузка сохраняет
+  запрос, а группировка по датам отключена.
 
 ### Создание и редактирование
 
@@ -104,6 +120,29 @@ ID термина постоянным после сохранения.
 в localStorage и добавляется к lookup-вызову. Backend возвращает определения,
 примеры, IPA и UK/US audio URL. `PronunciationButton` лениво загружает эти данные
 при первом воспроизведении.
+
+`hooks/usePronunciation.ts` и `lib/pronunciation.ts` управляют воспроизведением
+во всём приложении. Card/Spell пробуют выбранный акцент словаря, другой акцент,
+затем Google TTS. Кнопки UK/US сохраняют выбранный акцент и при отсутствии записи
+используют TTS. Learn/Test озвучивают текст напрямую через TTS. Браузерного
+`speechSynthesis` fallback нет. Подробнее: [Google TTS](../docs/google-tts.md).
+
+## Учебные режимы
+
+Все пять маршрутов загружают модуль на сервере и передают данные клиентскому
+компоненту упражнения. Логика каждого режима находится в `lib/<mode>-exercise.ts`.
+
+| Режим | Компонент | Поведение |
+| --- | --- | --- |
+| `card` | `CardExercise` | Переворот, оценка знания и отмена последней оценки |
+| `learn` | `LearnExercise` | Этапы по 7 терминов, выбор и письменные ответы |
+| `test` | `TestExercise` | Настройка типов вопросов и итоговая оценка |
+| `write` | `WriteExercise` | Ввод термина по определению с повторением ошибок |
+| `spell` | `SpellExercise` | Ввод на слух, разбор ошибок и повторное написание |
+
+Состояние каждого режима хранится в `sessionStorage` под ключом
+`dictcards:<mode>:<moduleId>`. Версия и fingerprint терминов позволяют отвергать
+устаревшие сессии. Учебный прогресс не записывается в backend.
 
 ## Режим `write`
 
@@ -172,7 +211,7 @@ Payload содержит номер версии, fingerprint терминов, 
 | `preferred-theme` | localStorage | Активная тема |
 | `preferred-dictionary-source` | localStorage | Cambridge или Oxford |
 | `preferred-pronunciation-variant` | localStorage | UK или US |
-| `dictcards:write:<moduleId>` | sessionStorage | Состояние write-сессии |
+| `dictcards:<mode>:<moduleId>` | sessionStorage | Состояние card/learn/test/write/spell |
 
 Имена ключей тем и словаря также экспортируются из соответствующих файлов
 `lib/`; при изменении следует обновить эту таблицу.
@@ -185,24 +224,27 @@ frontend/
 │   ├── layout.tsx
 │   ├── page.tsx
 │   ├── login/ register/ auth/callback/
-│   ├── library/ create/ settings/
+│   ├── library/ search/ create/ settings/
 │   └── module/[id]/
 │       ├── page.tsx
 │       ├── edit/page.tsx
-│       └── write/page.tsx
+│       └── card/ learn/ test/ write/ spell/   # page.tsx в каждом режиме
 ├── components/
 │   ├── layout/
 │   ├── ModuleForm.tsx
 │   ├── ModuleStudyModes.tsx
 │   ├── PronunciationButton.tsx
-│   └── WriteExercise.tsx
+│   ├── MobileTextField.tsx
+│   └── *Exercise.tsx
+├── hooks/usePronunciation.ts
 ├── lib/
 │   ├── api.ts
 │   ├── auth.ts
 │   ├── server-auth.ts
 │   ├── theme.ts
 │   ├── dictionary-settings.ts
-│   └── write-exercise.ts
+│   ├── pronunciation.ts
+│   └── *-exercise.ts
 ├── types/module.ts
 ├── test/setup.ts
 └── e2e/
@@ -233,9 +275,7 @@ Vitest-файлы находятся рядом с кодом. `test/setup.ts` �
 
 ## Известные границы
 
-- «Карточки», «Заучивание» и «Тест» пока не реализованы.
-- Поиск в header пока не выполняет запросы.
-- Учебная история `write` не отправляется на backend и не синхронизируется между
+- Учебная история всех режимов не отправляется на backend и не синхронизируется между
   устройствами или вкладками.
 - Auth cookie и JWT могут устареть независимо; при проблемах с пустыми данными
   сначала проверяйте согласованность cookie и localStorage.

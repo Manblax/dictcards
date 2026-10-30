@@ -5,6 +5,12 @@ public IP address resolves to `RU`. The server decides before rendering either f
 Russian browser language alone does not hide Google. VPNs can change the detected
 country; this is approximate IP location, not citizenship.
 
+These rules apply when social sign-in buttons are enabled. Setting the frontend
+server variable `SOCIAL_AUTH_ENABLED=false` hides both Google and Yandex on login
+and registration pages. With the variable unset, the app enables the buttons;
+`docker-compose.vps.yml` explicitly defaults it to `false`, so set it to `true`
+in `.env.vps` after configuring OAuth. This switch does not disable backend routes.
+
 Only `X-Real-IP` is used. The production Nginx template overwrites it with
 `$remote_addr`, and only Nginx publishes ports. Keep the frontend private behind
 that proxy. If a CDN is introduced, review the client-IP trust configuration first;

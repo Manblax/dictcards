@@ -21,9 +21,10 @@ NestJS API для авторизации, пользовательских мо�
 
 | Каталог | Назначение |
 | --- | --- |
-| `src/auth/` | Регистрация, парольный вход, Google OAuth, выпуск и проверка JWT |
+| `src/auth/` | Регистрация, парольный вход, Google OAuth, Яндекс ID, выпуск и проверка JWT |
 | `src/dictcards/` | CRUD модулей и вложенных терминов с проверкой владельца |
 | `src/dictionary/` | Кеш словарных ответов, вызов dictionary-service и аудиопрокси |
+| `src/tts/` | Google Cloud TTS, ограничения запросов и кеш MP3 |
 | `src/uploads/` | Загрузка файлов и выдача URL из `/uploads` |
 | `src/prisma/` | Общий Prisma client и lifecycle подключения |
 | `prisma/` | Схема базы данных и миграции |
@@ -36,6 +37,7 @@ NestJS API для авторизации, пользовательских мо�
 - `DictionaryEntry`: кеш нормализованного словарного ответа по паре
   `(normalizedWord, dictionarySource)`.
 - `DictionaryAudio`: стабильный ID и upstream URL аудиофайла.
+- `TtsAudio`: MP3 и хеш запроса TTS; кеш не имеет автоматического срока истечения.
 
 Удаление пользователя каскадно удаляет его модули, а удаление модуля — термины.
 При обновлении модуля список терминов пересоздаётся транзакционно; ID терминов
@@ -57,6 +59,9 @@ Google OAuth реализован напрямую через OAuth endpoints Go
 3. Backend перенаправляет на frontend `/auth/callback` с токеном и профилем в
    query string.
 
+Яндекс ID использует PKCE и подписанную OAuth cookie; результат возвращается
+во фрагменте URL. Подробности: [настройка и привязка аккаунтов](../docs/yandex-auth.md).
+
 Доступ к модулю разрешён, если `Module.userId` совпадает с ID пользователя. Для
 старых записей также поддерживается ветка `userId IS NULL AND author = username`.
 Чужой или отсутствующий модуль возвращает 404, а не 403.
@@ -73,11 +78,14 @@ Google OAuth реализован напрямую через OAuth endpoints Go
 - `POST /auth/login`
 - `GET /auth/google`
 - `GET /auth/google/callback`
+- `GET /auth/yandex`
+- `GET /auth/yandex/callback`
 
 ### Модули — Bearer JWT обязателен
 
 - `POST /dictcards`
-- `GET /dictcards?skip=0&take=20`
+- `GET /dictcards?skip=0&take=20&q=...` — необязательный поиск по названию
+  без учёта регистра в пределах доступных пользователю модулей.
 - `GET /dictcards/:id`
 - `PATCH /dictcards/:id`
 - `DELETE /dictcards/:id`
@@ -93,12 +101,14 @@ Google OAuth реализован напрямую через OAuth endpoints Go
 
 ### Загрузки
 
-- `POST /upload` — multipart form-data, поле `file`.
+- `POST /upload` — требует JWT; multipart form-data, одно поле `file`, до 10 МиБ.
 - `/uploads/*` — статическая раздача загруженных файлов.
 
-Текущий upload endpoint не защищён JWT и не ограничивает MIME-тип или размер
-файла. Это известное ограничение, которое необходимо учитывать при публичном
-развёртывании.
+Тип и содержимое файла не проверяются; запрос без файла пока приводит к ошибке
+сервера. VPS Nginx добавляет `Content-Security-Policy: sandbox` и
+`X-Content-Type-Options: nosniff` к `/uploads/`. Его лимит `10m` относится ко
+всему запросу, включая multipart-обёртку, поэтому фактический допустимый файл
+через этот proxy немного меньше 10 МиБ.
 
 ## Переменные окружения
 
@@ -111,6 +121,11 @@ Google OAuth реализован напрямую через OAuth endpoints Go
 | `GOOGLE_CLIENT_ID` | Google OAuth client | нужен только для Google OAuth |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth secret | нужен только для Google OAuth |
 | `GOOGLE_CALLBACK_URL` | Google callback URL | `http://localhost:3001/auth/google/callback` |
+| `YANDEX_CLIENT_ID` / `YANDEX_CLIENT_SECRET` | Яндекс OAuth | нужны только для Яндекс ID |
+| `YANDEX_CALLBACK_URL` | Яндекс callback URL | `http://localhost:3001/auth/yandex/callback` |
+| `GOOGLE_TTS_API_KEY` | Серверный ключ Google TTS; при наличии имеет приоритет над ADC | не задан |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Путь к файлу ADC credentials внутри backend | стандартный поиск ADC |
+| `TTS_VOICE_UK` / `TTS_VOICE_US` | Голоса UK/US | `en-GB-Chirp3-HD-Achernar` / `en-US-Chirp3-HD-Achernar` |
 | `DICTIONARY_SERVICE_URL` | Адрес внутреннего dictionary-service | `http://localhost:4000` вне Compose |
 | `DICTIONARY_CACHE_TTL_DAYS` | Срок словарного кеша | `30` |
 | `DICTIONARY_BACKEND_TIMEOUT_MS` | Таймаут backend → dictionary-service | `9000` |
@@ -126,6 +141,9 @@ DICTIONARY_SERVICE_URL=http://dictionary-service:4000
 ```
 
 ## Установка и запуск
+
+Пароли и JWT в примерах — только для development. Production требует отдельных
+случайных значений: [правила хранения и проверки секретов](../docs/security.md).
 
 Из корня репозитория:
 

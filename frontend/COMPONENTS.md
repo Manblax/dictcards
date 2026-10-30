@@ -1,8 +1,8 @@
 # Компоненты frontend
 
 Документ описывает активные компоненты в `frontend/components/` и связанные с
-ними клиентские утилиты. Все пользовательские строки интерфейса, кроме
-запрошенного названия режима `write`, используются на русском языке.
+ними клиентские утилиты. Пользовательские строки интерфейса используются на
+русском языке; названия режимов — `card`, `learn`, `test`, `write`, `spell`.
 
 ## Layout
 
@@ -13,6 +13,8 @@
 - Для гостя показывает только `Header` и содержимое страницы.
 - Для авторизованного пользователя создаёт DaisyUI drawer с `Sidebar`.
 - Получает `isAuthenticated` из корневого Server Component layout.
+- На учебных маршрутах применяет `study-shell`: ниже 1280px глобальная навигация
+  скрыта. Редактор использует `editor-shell` со своей мобильной панелью.
 
 ```ts
 interface MainLayoutProps {
@@ -29,6 +31,13 @@ interface MainLayoutProps {
 - Для гостя выводит ссылки на регистрацию и вход.
 - Для авторизованного пользователя отображает создание модуля и `UserMenu`.
 - Использует адаптивные варианты для узких и широких экранов.
+- Отправляет поисковый запрос на `/search?q=...`; поиск ограничен своими модулями.
+
+### `BrandLogo`
+
+Файл: `components/BrandLogo.tsx`
+
+Общий логотип на главной странице и в навигации; использует `/dictcards.svg`.
 
 ### `Sidebar`
 
@@ -83,13 +92,15 @@ Server Components. Если представления расходятся, в�
 ```ts
 interface InfiniteModuleListProps {
   initialModules: Module[];
+  query?: string;
 }
 ```
 
 - Получает первую страницу из Server Component.
 - Догружает по 20 модулей через `getModules`.
 - Использует `IntersectionObserver` как триггер.
-- Группирует элементы по текущей неделе, прошлой неделе и месяцам.
+- В библиотеке группирует элементы по периодам; при переданном `query` выводит
+  результаты поиска без группировки и сохраняет запрос при догрузке.
 
 ### `ModuleForm`
 
@@ -114,6 +125,14 @@ interface ModuleFormProps {
 - выбор определения из Cambridge/Oxford;
 - отправка через `createModule` или `updateModule`.
 
+### `MobileTextField`
+
+Файл: `components/MobileTextField.tsx`
+
+Поля названия, термина и определения в редакторе. Ниже 640px использует
+растущий `textarea` высотой до 192px, на больших экранах — `input`.
+Переносы удаляются из значения, поэтому данные остаются однострочными.
+
 ### `DeleteModuleButton`
 
 Файл: `components/DeleteModuleButton.tsx`
@@ -134,16 +153,28 @@ interface PronunciationButtonProps {
 
 - Загружает словарные данные только при первом нажатии.
 - Отдельно воспроизводит UK и US варианты.
-- Кеширует найденные URL в пределах экземпляра компонента.
+- Использует `usePronunciation` в режиме `exact`: при отсутствии нужного
+  словарного акцента обращается к Google TTS, сохраняя UK/US.
 - Показывает состояния загрузки и отсутствующего аудио.
 
 ### `ModuleStudyModes`
 
 Файл: `components/ModuleStudyModes.tsx`
 
-Рендерит кнопки режимов в порядке «Карточки», «Заучивание», «Тест», `write`.
-`write` является ссылкой на `/module/[id]/write`; остальные режимы пока
-визуальные заглушки.
+Рендерит рабочие ссылки `card`, `learn`, `test`, `write`, `spell` на
+`/module/[id]/<mode>` в этом порядке.
+
+## Учебные компоненты и аудио
+
+`CardExercise`, `LearnExercise`, `TestExercise`, `WriteExercise` и `SpellExercise`
+принимают `moduleId`, `moduleTitle`, `terms`. Каждый использует чистые функции
+из `lib/<mode>-exercise.ts` и хранит свою версионированную сессию в
+`sessionStorage`. Обзор поведения: [архитектура frontend](PROJECT_OVERVIEW.md#учебные-режимы).
+
+Общий `hooks/usePronunciation.ts` связывает UI с `PronunciationSession` из
+`lib/pronunciation.ts`. Одновременно играет только один фрагмент; новый запуск
+останавливает предыдущий. Card/Spell используют словарное аудио с TTS fallback,
+Learn/Test — TTS. Blob URL освобождаются при завершении жизненного цикла сессии.
 
 ## Режим `write`
 

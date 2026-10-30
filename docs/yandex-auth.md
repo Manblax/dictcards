@@ -5,6 +5,8 @@
 оставляют Google. Решение принимает сервер по `X-Real-IP`, который перезаписывает
 Nginx. Язык браузера не влияет на выбор. Подробнее: [определение страны](google-auth-country.md).
 Прямой вход `/auth/yandex` доступен из любой страны, в том числе локально.
+При `SOCIAL_AUTH_ENABLED=false` в окружении frontend обе кнопки скрыты.
+Это не отключает прямые маршруты OAuth на backend.
 
 ## Регистрация приложения
 
@@ -38,11 +40,17 @@ Compose передаёт их backend и переопределяет однои
 `FRONTEND_URL` указывает адрес frontend; `JWT_SECRET` используется также для
 подписи OAuth cookie. После изменения окружения перезапустите backend.
 
-В production ClientID и секрет обязательны в `.env.production`.
+Для `docker-compose.production.yml` ClientID и секрет обязательны в `.env.production`.
 Compose задаёт callback как `https://${API_HOST}/auth/yandex/callback`.
 `scripts/deploy-production.sh` проверяет наличие значений и отклоняет заглушки
 `replace-with-*`. Локальная разработка без ключей остаётся доступна; запуск входа
 через Яндекс перенаправляет на понятное сообщение о недостающей настройке.
+
+Для VPS используйте `.env.vps`: задайте `YANDEX_CLIENT_ID`,
+`YANDEX_CLIENT_SECRET` и `SOCIAL_AUTH_ENABLED=true`. Callback формируется из
+`PUBLIC_HOST` (или `PUBLIC_IP`) как `https://<host>/auth/yandex/callback`.
+В VPS Compose ключи необязательны, а кнопки по умолчанию скрыты. Секреты храните
+по [правилам проекта](security.md); инструкции обновления — в [VPS](vps.md).
 
 ## Аккаунты и протокол
 

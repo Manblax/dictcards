@@ -4,17 +4,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Documentation status
 
-All prose docs were rewritten in `2dc99cd` and are broadly accurate, **but they predate the
-card / learn / test / spell exercises and Google TTS.** When a doc disagrees with the code,
-the code wins.
+Documentation was synchronized with the repository on 2026-10-30, including all five
+study modes, module search, VPS deployment, and secret scanning. When a doc disagrees
+with the code, the code wins. Deployment notes record previous checks; they do not
+establish the current health of a live server.
 
 | File | Status |
 | --- | --- |
-| `README.md` | Setup, local run, deploy: current. **Stale:** calls `write` the only working study mode; routes table lacks `card`/`learn`/`test`/`spell`. |
-| `backend/README.md` | Project-specific and mostly current. **Stale:** no `src/tts/`, no `TtsAudio` model, env table lacks `TTS_VOICE_*`. |
-| `frontend/PROJECT_OVERVIEW.md`, `COMPONENTS.md`, `QUICK_START.md` | Auth, API, theming: current. **Stale:** describe every mode except `write` as a stub; no TTS, `hooks/`, or `MobileTextField`. |
+| `README.md` | Setup, routes, study modes, and the two production deployment options. |
+| `backend/README.md` | API, models, auth, uploads, TTS, and environment variables. |
+| `frontend/PROJECT_OVERVIEW.md`, `COMPONENTS.md`, `QUICK_START.md` | Frontend setup, search, exercises, pronunciation, and component architecture. |
 | `frontend/RESPONSIVE.md` | Current. |
 | `docs/google-tts.md` | Current. The reference for TTS setup and behaviour. |
+| `docs/vps.md` | VPS operations, domain/IP TLS, and previous deployment verification. |
+| `docs/security.md` | Secret handling, local commit hook, CI scanning, and audit limitations. |
 
 ## Repository shape
 
@@ -32,9 +35,11 @@ Three independent npm projects plus Postgres. **There are no npm workspaces**: t
 internal-only (`expose`d, never published, even in dev compose) and serves just
 `GET /health` and `GET /internal/lookup?word=&source=`.
 
-Compose files: `docker-compose.yml` (dev), `docker-compose.production.yml` (prod, behind
-nginx), and `docker-compose.tts.yml`, an optional **overlay** that mounts Google
-credentials into the backend.
+Compose files: `docker-compose.yml` (dev), `docker-compose.production.yml` (GHCR images,
+frontend/API host settings), `docker-compose.vps.yml` (server builds, one domain or IP),
+and `docker-compose.tts.yml`, an optional **overlay** that mounts Google ADC credentials
+into the backend. The two production projects have different names and default volumes;
+switching files does not migrate data.
 
 ## Commands
 
@@ -107,8 +112,9 @@ npx prisma migrate deploy              # CI / production
   `README.md`. Only root `.env.example` and `.env.production.example` are tracked.
 - With TTS: `docker compose -f docker-compose.yml -f docker-compose.tts.yml up -d`, with
   `TTS_CREDENTIALS_FILE` set to an absolute path to a service-account JSON **outside the
-  repo**. The overlay refuses to interpolate without it. Without the overlay, everything
-  still runs and uncached TTS requests return 502.
+  repo**. The overlay refuses to interpolate without it. Without any valid TTS credentials,
+  the backend still runs and uncached TTS requests return 502. The VPS configuration
+  passes `GOOGLE_TTS_API_KEY` directly and does not need the ADC overlay for that setup.
 
 ## Architecture
 
@@ -118,6 +124,7 @@ This is the single most confusing part of the codebase.
 
 - The backend issues a JWT with a **60-minute** expiry (`backend/src/auth/auth.module.ts`).
   An unset `JWT_SECRET` silently falls back to a hard-coded dev secret.
+  Registration returns the same signed session and user shape as password login.
 - The frontend persists it in **two** places:
   - `localStorage.token` / `localStorage.user`, used by client-side fetches.
   - A **non-httpOnly, non-Secure `token` cookie** with `max-age=3600`. It is the only way
@@ -142,6 +149,12 @@ is a raw `fetch` in `auth.service.ts`); there is no passport-google strategy.
 `/auth/google` builds the consent URL by hand. `/auth/google/callback` exchanges the code
 and redirects to the frontend `/auth/callback` with `access_token`, `id`, `username`, and
 `email` **in the query string**.
+
+Yandex ID uses PKCE and a signed HttpOnly state cookie, then returns the session in
+the URL fragment. See `docs/yandex-auth.md`. Login/register server pages select the
+provider by country; `SOCIAL_AUTH_ENABLED=false` in the frontend environment hides
+both buttons without disabling the backend OAuth routes. VPS Compose defaults it to
+`false`; the documented deployment explicitly enables it.
 
 ### API base-URL duality
 
@@ -201,7 +214,8 @@ Backend `backend/src/tts/` serves `POST /tts` with body `{ text, variant: "uk" |
 - JWT-guarded. That works here because the frontend `fetch`es the audio with a bearer token
   and plays it from a Blob URL, unlike `/dictionary/audio/:id`.
 - `TtsService` validates the body **by hand** (no DTO): trimmed text of 1–4000 UTF-8 bytes.
-- Calls `@google-cloud/text-to-speech` with Application Default Credentials. Voices are
+- Calls `@google-cloud/text-to-speech` with `GOOGLE_TTS_API_KEY` when set, otherwise
+  Application Default Credentials. Voices are
   `en-GB-` / `en-US-Chirp3-HD-Achernar`, overridable via `TTS_VOICE_UK` / `TTS_VOICE_US`.
 - Audio is cached **forever** in `TtsAudio`, keyed by the sha256 of the whole request JSON
   (text, voice, and audio config), so changing a voice creates new rows. Concurrent
@@ -253,6 +267,11 @@ the header and drawer below 1280px.
 
 ### Module authorization
 
+`GET /dictcards` accepts optional `q` alongside `skip`/`take`. It searches titles by
+case-insensitive literal substring within the user's authorized modules. The header
+opens `/search?q=...`; `InfiniteModuleList` preserves the query during pagination and
+omits date grouping for search results.
+
 `moduleAccessWhere()` in `backend/src/dictcards/dictcards.service.ts` scopes every read
 and write to:
 
@@ -293,11 +312,14 @@ Check this before debugging "why is my list empty" or "why is this a 404".
 | `FRONTEND_URL` | `http://localhost:3000` | CORS and OAuth redirect target |
 | `GOOGLE_CLIENT_ID` / `_SECRET` | none (OAuth returns 500 if unset) | Google OAuth |
 | `GOOGLE_CALLBACK_URL` | `http://localhost:3001/auth/google/callback` | Google OAuth |
+| `YANDEX_CLIENT_ID` / `YANDEX_CLIENT_SECRET` | none | Yandex ID |
+| `YANDEX_CALLBACK_URL` | `http://localhost:3001/auth/yandex/callback` | Yandex ID |
 | `DICTIONARY_SERVICE_URL` | `http://localhost:4000` | reaching dictionary-service |
 | `DICTIONARY_CACHE_TTL_DAYS` | `30` | dictionary cache TTL |
 | `DICTIONARY_BACKEND_TIMEOUT_MS` | `9000` | backend → dictionary-service timeout |
 | `TTS_VOICE_UK` / `TTS_VOICE_US` | `en-GB-` / `en-US-Chirp3-HD-Achernar` | TTS voices |
 | `GOOGLE_APPLICATION_CREDENTIALS` | ADC lookup | TTS; set by the TTS overlay |
+| `GOOGLE_TTS_API_KEY` | none | TTS API key; takes precedence over ADC |
 
 dictionary-service reads `PORT` (4000), `DICTIONARY_TIMEOUT_MS` (6000), and
 `DICTIONARY_USER_AGENT`.
@@ -336,18 +358,21 @@ dictionary-service reads `PORT` (4000), `DICTIONARY_TIMEOUT_MS` (6000), and
 
 ## Known gaps
 
-- **`POST /upload`** (`backend/src/uploads/uploads.controller.ts`) has **no auth guard**, no
-  file-type or size validation, and returns 500 when no file is sent. Files land in
+- **`POST /upload`** (`backend/src/uploads/uploads.controller.ts`) requires JWT and limits
+  uploads to one file of 10 MiB. It has no file-type/content validation and returns 500
+  when no file is sent. Files land in
   `uploads/` under the backend's working directory and are served statically at `/uploads`
-  via `ServeStaticModule`.
-- **Swagger (`/api/docs`) is public in production.** nginx proxies all of `API_HOST` to the
-  backend.
+  via `ServeStaticModule`. VPS Nginx adds CSP `sandbox` and `nosniff` to these responses;
+  its 10m limit covers the whole multipart request, not just the file.
+- **Swagger (`/api/docs`) is enabled on the backend.** The GHCR production Nginx template
+  exposes it through `API_HOST`; the VPS templates do not route `/api/docs` to the backend.
 - **`scripts/deploy-production.sh` ignores the TTS overlay.** It passes only
   `-f docker-compose.production.yml`, so a scripted deploy recreates the backend **without**
   Google credentials. If TTS is in use, follow up with the two-file command in
   `docs/google-tts.md`.
 - **`isFavorite` resets** on every module save that includes terms (see Module authorization).
-- **No request-body validation** anywhere in the backend (see Backend bootstrap and config).
+- **No global request-body validation** (see Backend bootstrap and config). TTS performs
+  its own manual text/variant checks.
 - Frontend `lint` is broken (see Commands).
 - The TTS rate limit lives in process memory. It resets on restart and is not shared across
   replicas.
@@ -364,8 +389,11 @@ dictionary-service reads `PORT` (4000), `DICTIONARY_TIMEOUT_MS` (6000), and
 3. `production-config`: runs `compose config` against `.env.production.example`, renders
    `deploy/nginx/default.conf.template`, and asserts that **only** nginx publishes ports 80
    and 443.
+4. `gitleaks`: installs version 8.30.1 with checksum verification and scans all fetched
+   history with redacted output. One exact historical NestJS badge finding is ignored.
 
-CI does **not** lint, run the responsive suite, or validate `docker-compose.tts.yml`.
+CI does **not** lint, run the responsive suite, or validate `docker-compose.tts.yml`
+or `docker-compose.vps.yml`.
 
 `.github/workflows/cd.yml` fires on successful CI on `main`/`master`, on `v*.*.*` tags, and
 on manual dispatch. It pushes three images to GHCR tagged `sha-<sha>`, plus the git tag and
@@ -376,3 +404,18 @@ Deploy with `./scripts/deploy-production.sh .env.production`. To check the env f
 compose config without deploying, append `--validate-only` after the env file. For the first-time TLS bootstrap, use
 `./scripts/init-production-tls.sh .env.production`. To roll back, set `IMAGE_TAG` back to an
 earlier `sha-*` and re-run the deploy script.
+
+The VPS uses `./scripts/deploy-vps.sh` with `.env.vps`, sequential local image builds,
+and a systemd timer for TLS renewal. See `docs/vps.md` for that deployment path.
+
+## Secrets and commits
+
+Read `docs/security.md` before configuring credentials. Env files at any depth,
+common private-key filenames, and backups are ignored. Never put secrets in
+`NEXT_PUBLIC_*`, build arguments, examples, documentation, or test fixtures.
+Development fallback values are public and must not be used in production.
+
+Install Gitleaks and enable `git config core.hooksPath .githooks` in each clone.
+The pre-commit hook scans staged changes and fails if the scanner is missing;
+it also accepts a binary at `.git/tools/gitleaks`. Do not bypass a failed scan
+or add a real credential to `.gitleaksignore`.
