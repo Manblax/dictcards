@@ -1,12 +1,13 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   getPublicApiUrl,
   lookupDictionary,
   type DictionaryLookupResult,
 } from "@/lib/api";
+import { clearPronunciationCache } from "@/lib/pronunciation-cache";
 import type { Term } from "@/types/module";
 import CardExercise, { getCardHint } from "./CardExercise";
 
@@ -53,7 +54,14 @@ function renderExercise(customTerms = terms) {
 }
 
 describe("CardExercise", () => {
+  afterEach(() => clearPronunciationCache());
   beforeEach(() => {
+    clearPronunciationCache();
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("audio")));
+    vi.stubGlobal("URL", class extends URL {
+      static createObjectURL = vi.fn(() => "blob:audio");
+      static revokeObjectURL = vi.fn();
+    });
     vi.mocked(lookupDictionary).mockReset();
     vi.mocked(getPublicApiUrl).mockClear();
     vi.mocked(lookupDictionary).mockResolvedValue(createLookupResult());
@@ -155,7 +163,7 @@ describe("CardExercise", () => {
       }),
     );
 
-    await waitFor(() => expect(lookupDictionary).toHaveBeenCalledWith("Apple"));
+    await waitFor(() => expect(lookupDictionary).toHaveBeenCalledWith("apple", { source: "cambridge" }));
     expect(getPublicApiUrl).toHaveBeenCalledWith(
       "/dictionary/audio/uk-apple",
     );

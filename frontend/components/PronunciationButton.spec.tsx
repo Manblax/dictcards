@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DICTIONARY_SOURCE_SETTING_KEY } from "@/lib/dictionary-settings";
+import { clearPronunciationCache } from "@/lib/pronunciation-cache";
 import PronunciationButton from "./PronunciationButton";
 
 const { play, usePronunciation } = vi.hoisted(() => ({
@@ -15,6 +16,7 @@ function response(ipa: { uk?: string; us?: string } = {}) {
 
 describe("list transcription", () => {
   beforeEach(() => {
+    clearPronunciationCache();
     play.mockReset();
     usePronunciation.mockReset().mockReturnValue({ play, status: "idle", message: null });
     vi.stubGlobal("IntersectionObserver", undefined);

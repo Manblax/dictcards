@@ -2,7 +2,8 @@
 
 import { usePronunciation } from "@/hooks/usePronunciation";
 import { useEffect, useRef, useState } from "react";
-import { lookupDictionary, type DictionaryLookupResult } from "@/lib/api";
+import type { DictionaryLookupResult } from "@/lib/api";
+import { getCachedDictionary } from "@/lib/pronunciation-cache";
 import type { PronunciationVariant } from "@/lib/pronunciation-settings";
 
 interface PronunciationButtonProps {
@@ -31,7 +32,7 @@ export default function PronunciationButton({
       if (started || !active) return;
       started = true;
       try {
-        const result = await lookupDictionary(term);
+        const result = await getCachedDictionary(term);
         if (active) setTranscription({ term, ipa: result.ipa });
       } catch {
         // Transcription is optional; audio controls remain available.

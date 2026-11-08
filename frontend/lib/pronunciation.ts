@@ -1,5 +1,11 @@
-import { getPublicApiUrl, lookupDictionary, synthesizeSpeech } from "./api";
 import { getDictionarySourcePreference } from "./dictionary-settings";
+import {
+  getCachedDictionary,
+  getCachedDictionaryAudio,
+  getCachedSpeech,
+  onPronunciationCacheReset,
+  type CachedAudio,
+} from "./pronunciation-cache";
 import {
   getAlternatePronunciationVariant,
   type PronunciationVariant,
@@ -15,15 +21,12 @@ export function isAutoplayError(error: unknown) {
   return (error as { name?: string } | null)?.name === "NotAllowedError";
 }
 
-// One session owns its Blob URLs; disposal also invalidates pending requests.
+// A session owns playback only. Downloaded audio belongs to the shared cache.
 export class PronunciationSession {
   private static active: PronunciationSession | null = null;
-  private cache = new Map<string, Promise<Clip[]>>();
-  private speech = new Map<string, Promise<Clip>>();
-  private urls = new Set<string>();
-  private failed = new Set<string>();
   private audio: HTMLAudioElement | null = null;
   private generation = 0;
+  private unsubscribe = onPronunciationCacheReset(() => this.stop());
 
   stop() {
     this.generation++;
@@ -38,11 +41,7 @@ export class PronunciationSession {
     this.stop();
     if (PronunciationSession.active === this)
       PronunciationSession.active = null;
-    this.urls.forEach((url) => URL.revokeObjectURL(url));
-    this.urls.clear();
-    this.cache.clear();
-    this.speech.clear();
-    this.failed.clear();
+    this.unsubscribe();
   }
 
   async play(
@@ -57,79 +56,48 @@ export class PronunciationSession {
     const current = () => generation === this.generation;
     const word = text.trim();
     if (!word) throw new Error("Empty text");
-    const key = JSON.stringify([
-      word,
-      variant,
-      getDictionarySourcePreference(),
-      mode,
-    ]);
-    let candidates = this.cache.get(key);
-    if (!candidates) {
-      candidates = (async () => {
-        if (mode === "speech") return [];
-        try {
-          const result = await lookupDictionary(word);
-          const variants =
-            mode === "exact"
-              ? [variant]
-              : [variant, getAlternatePronunciationVariant(variant)];
-          return variants.flatMap((accent) =>
-            result.audio[accent]
-              ? [
-                  {
-                    url: getPublicApiUrl(result.audio[accent]),
-                    variant: accent,
-                  },
-                ]
-              : [],
-          );
-        } catch (error) {
-          if (isAuthenticationError(error)) throw error;
-          return [];
-        }
-      })();
-      this.cache.set(key, candidates);
-      void candidates.catch(() => this.cache.delete(key));
-    }
-    for (const clip of await candidates) {
-      if (!current()) return null;
-      if (this.failed.has(clip.url)) continue;
+    const source = getDictionarySourcePreference();
+    let candidates: Clip[] = [];
+    if (mode !== "speech") {
       try {
-        await this.playClip(clip.url);
+        const result = await getCachedDictionary(word, source);
+        const variants = mode === "exact"
+          ? [variant]
+          : [variant, getAlternatePronunciationVariant(variant)];
+        candidates = variants.flatMap((accent) => result.audio[accent]
+          ? [{ url: result.audio[accent], variant: accent }]
+          : []);
+      } catch (error) {
+        if (!current()) return null;
+        if (isAuthenticationError(error)) throw error;
+      }
+    }
+    for (const clip of candidates) {
+      if (!current()) return null;
+      let cached: CachedAudio | undefined;
+      try {
+        cached = await getCachedDictionaryAudio(clip.url);
+        if (!current()) return null;
+        await this.playClip(cached.url);
         return current() ? clip.variant : null;
       } catch (error) {
         if (!current()) return null;
         if (isAutoplayError(error)) throw error;
-        this.failed.add(clip.url);
+        cached?.invalidate();
       }
     }
     if (!current()) return null;
-    let speech = this.speech.get(key);
-    if (!speech) {
-      speech = synthesizeSpeech(word, variant).then((blob) => {
-        // Navigation must not leave an unowned object URL behind.
-        if (!current())
-          throw new DOMException("Playback cancelled", "AbortError");
-        const url = URL.createObjectURL(blob);
-        this.urls.add(url);
-        return { url, variant };
-      });
-      this.speech.set(key, speech);
-      void speech.catch(() => this.speech.delete(key));
-    }
-    const clip = await speech;
-    if (!current()) return null;
+    let speech: CachedAudio | undefined;
     try {
-      await this.playClip(clip.url);
+      speech = await getCachedSpeech(word, variant);
+      if (!current()) return null;
+      await this.playClip(speech.url);
     } catch (error) {
-      if (!isAutoplayError(error)) {
-        this.speech.delete(key);
-        URL.revokeObjectURL(clip.url);
-        this.urls.delete(clip.url);
-      }
+      if (!current()) return null;
+      if (!isAutoplayError(error)) speech?.invalidate();
       throw error;
     }
-    return current() ? clip.variant : null;
+    return current() ? variant : null;
   }
 
   private async playClip(url: string) {

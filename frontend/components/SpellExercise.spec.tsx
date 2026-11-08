@@ -1,6 +1,6 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   getPublicApiUrl,
@@ -13,6 +13,7 @@ import {
   submitSpellAnswer,
 } from "@/lib/spell-exercise";
 import { PRONUNCIATION_SETTING_KEY } from "@/lib/pronunciation-settings";
+import { clearPronunciationCache } from "@/lib/pronunciation-cache";
 import type { Term } from "@/types/module";
 import SpellExercise from "./SpellExercise";
 
@@ -63,7 +64,14 @@ function renderExercise(customTerms = terms) {
 describe("SpellExercise", () => {
   let playSpy: ReturnType<typeof vi.spyOn>;
 
+  afterEach(() => clearPronunciationCache());
   beforeEach(() => {
+    clearPronunciationCache();
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("audio")));
+    vi.stubGlobal("URL", class extends URL {
+      static createObjectURL = vi.fn(() => "blob:audio");
+      static revokeObjectURL = vi.fn();
+    });
     vi.mocked(lookupDictionary).mockReset();
     vi.mocked(getPublicApiUrl).mockClear();
     vi.mocked(lookupDictionary).mockResolvedValue(createLookupResult());
@@ -84,7 +92,7 @@ describe("SpellExercise", () => {
     expect(input).toHaveFocus();
 
     await waitFor(() => expect(playSpy).toHaveBeenCalledTimes(1));
-    expect(lookupDictionary).toHaveBeenCalledWith("Apple");
+    expect(lookupDictionary).toHaveBeenCalledWith("apple", { source: "cambridge" });
     expect(getPublicApiUrl).toHaveBeenCalledWith(
       "/dictionary/audio/us-apple",
     );

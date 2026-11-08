@@ -201,6 +201,14 @@ describe("api utilities", () => {
     expect(init.headers.get("Authorization")).toBe("Bearer stored-token");
   });
 
+  it("honors an explicitly captured dictionary source", async () => {
+    localStorage.setItem(DICTIONARY_SOURCE_SETTING_KEY, "oxford");
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({}));
+    vi.stubGlobal("fetch", fetchMock);
+    await lookupDictionary("work", { source: "cambridge" });
+    expect(fetchMock.mock.calls[0][0]).toContain("source=cambridge");
+  });
+
   it("uploads a file as form data", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ url: "/uploads/image.png" }), {

@@ -1,5 +1,5 @@
 import type { Module } from "@/types/module";
-import { getDictionarySourcePreference } from "@/lib/dictionary-settings";
+import { getDictionarySourcePreference, type DictionarySourcePreference } from "@/lib/dictionary-settings";
 
 const PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 const INTERNAL_API_URL = process.env.INTERNAL_API_URL || PUBLIC_API_URL;
@@ -191,9 +191,9 @@ export async function deleteModule(id: string, options: RequestOptions = {}) {
 
 export async function lookupDictionary(
   word: string,
-  options: RequestOptions = {},
+  options: RequestOptions & { source?: DictionarySourcePreference } = {},
 ): Promise<DictionaryLookupResult> {
-  const source = getDictionarySourcePreference();
+  const source = options.source ?? getDictionarySourcePreference();
   const query = new URLSearchParams({
     word,
     source,
