@@ -9,6 +9,8 @@ import type {
   PublicDictionaryLookupResult,
 } from './dictionary.types';
 
+const EMPTY_CACHE_TTL_MS = 5 * 60 * 1000;
+
 @Injectable()
 export class DictionaryService {
   private readonly serviceUrl =
@@ -37,7 +39,11 @@ export class DictionaryService {
       },
     });
 
-    if (cached && this.isCacheFresh(cached.expiresAt)) {
+    const cachedPayload = cached?.payload as unknown as InternalDictionaryLookupResult | undefined;
+    const emptyCacheIsFresh = cachedPayload && this.hasEntryData(cachedPayload)
+      ? true
+      : cached?.updatedAt && Date.now() - cached.updatedAt.getTime() < EMPTY_CACHE_TTL_MS;
+    if (cached && this.isCacheFresh(cached.expiresAt) && emptyCacheIsFresh) {
       return {
         ...(cached.payload as unknown as InternalDictionaryLookupResult),
         cached: true,
@@ -48,7 +54,9 @@ export class DictionaryService {
     const publicPayload = await this.materializeAudioUrls(internalResult);
     const storedPayload = this.toJson(publicPayload);
     const storedSources = this.toJson(publicPayload.sources);
-    const expiresAt = this.getExpiresAt();
+    const expiresAt = this.hasEntryData(publicPayload)
+      ? this.getExpiresAt()
+      : new Date(Date.now() + EMPTY_CACHE_TTL_MS);
 
     await this.prisma.dictionaryEntry.upsert({
       where: {
@@ -179,6 +187,11 @@ export class DictionaryService {
 
   private isCacheFresh(expiresAt: Date | null) {
     return !expiresAt || expiresAt.getTime() > Date.now();
+  }
+
+  private hasEntryData(result: InternalDictionaryLookupResult) {
+    return Boolean(result.definitions?.length || result.ipa?.uk || result.ipa?.us ||
+      result.audio?.uk || result.audio?.us);
   }
 
   private getExpiresAt() {

@@ -1,8 +1,43 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { OxfordProvider } from './oxford.provider';
+import * as http from './http-client';
 
 describe('OxfordProvider', () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  it('follows an explicit spacing/hyphen spelling suggestion on a 404', async () => {
+    const fetch = jest.spyOn(http, 'fetchHtml')
+      .mockRejectedValueOnce(new http.DictionaryHttpError(404,
+        '<a class="dym-link" href="/search/english/?q=icebreaker">icebreaker</a>'))
+      .mockResolvedValueOnce('<div class="entry"><div class="phons_br"><span class="phon">/ˈaɪsbreɪkə(r)/</span></div><div class="phons_n_am"><span class="phon">/ˈaɪsbreɪkər/</span></div><span class="def">something to help people relax</span></div>');
+    const result = await new OxfordProvider().lookup('ice-breaker');
+    expect(fetch).toHaveBeenNthCalledWith(2, 'https://www.oxfordlearnersdictionaries.com/definition/english/icebreaker', expect.any(Number));
+    expect(result.normalizedWord).toBe('ice-breaker');
+    expect(result.ipa).toEqual({ uk: '/ˈaɪsbreɪkə(r)/', us: '/ˈaɪsbreɪkər/' });
+  });
+
+  it('does not guess unrelated words or plural suggestions', async () => {
+    const error = new http.DictionaryHttpError(404, '<a class="dym-link">icebreakers</a><a class="dym-link">ice cream</a>');
+    const fetch = jest.spyOn(http, 'fetchHtml').mockRejectedValue(error);
+    await expect(new OxfordProvider().lookup('ice-breaker')).rejects.toBe(error);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not follow suggestions on blocked requests', async () => {
+    const error = new http.DictionaryHttpError(403, '<a class="dym-link">icebreaker</a>');
+    const fetch = jest.spyOn(http, 'fetchHtml').mockRejectedValue(error);
+    await expect(new OxfordProvider().lookup('ice-breaker')).rejects.toBe(error);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('limits spelling resolution to one additional request', async () => {
+    const error = new http.DictionaryHttpError(404, '<a class="dym-link">icebreaker</a>');
+    const fetch = jest.spyOn(http, 'fetchHtml').mockRejectedValue(error);
+    await expect(new OxfordProvider().lookup('ice-breaker')).rejects.toBe(error);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
   it('parses definitions, examples, IPA, and audio from Oxford HTML', () => {
     const html = readFileSync(
       join(__dirname, '../test-fixtures/oxford-run.html'),

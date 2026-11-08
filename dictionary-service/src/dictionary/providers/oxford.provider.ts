@@ -12,7 +12,7 @@ import {
   toAbsoluteUrl,
   uniqueStrings,
 } from '../dictionary.utils';
-import { fetchHtml } from './http-client';
+import { DictionaryHttpError, fetchHtml } from './http-client';
 
 const OXFORD_BASE_URL = 'https://www.oxfordlearnersdictionaries.com';
 
@@ -24,10 +24,24 @@ export class OxfordProvider {
 
   async lookup(word: string): Promise<ProviderLookupResult> {
     const normalizedWord = normalizeWord(word);
-    const url = `${OXFORD_BASE_URL}/definition/english/${encodeURIComponent(
-      normalizedWord.replace(/\s+/g, '-'),
-    )}`;
-    const html = await fetchHtml(url, this.timeoutMs);
+    const deadline = Date.now() + this.timeoutMs;
+    const entryUrl = (value: string) =>
+      `${OXFORD_BASE_URL}/definition/english/${encodeURIComponent(value.replace(/\s+/g, '-'))}`;
+    let html: string;
+    try {
+      html = await fetchHtml(entryUrl(normalizedWord), this.timeoutMs);
+    } catch (error) {
+      if (!(error instanceof DictionaryHttpError) || error.status !== 404) throw error;
+      const $ = cheerio.load(error.html);
+      // Follow an explicit spelling suggestion only when spacing/hyphens differ.
+      // Never guess another word or follow arbitrary links from the page.
+      const compact = (value: string) => value.replace(/[\s-]/g, '');
+      const alternative = $('.dym-link').map((_, node) => normalizeWord($(node).text())).get()
+        .find((value) => value !== normalizedWord && /^[a-z][a-z\s'-]*$/.test(value)
+          && compact(value) === compact(normalizedWord));
+      if (!alternative) throw error;
+      html = await fetchHtml(entryUrl(alternative), Math.max(1, deadline - Date.now()));
+    }
 
     return this.parse(html, word);
   }

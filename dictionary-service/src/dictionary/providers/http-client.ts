@@ -1,6 +1,12 @@
 const DEFAULT_USER_AGENT =
   'Mozilla/5.0 (compatible; DictcardsDictionaryBot/1.0; +https://localhost)';
 
+export class DictionaryHttpError extends Error {
+  constructor(public readonly status: number, public readonly html = '') {
+    super(`Dictionary source responded with ${status}`);
+  }
+}
+
 export async function fetchHtml(url: string, timeoutMs: number) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -17,7 +23,10 @@ export async function fetchHtml(url: string, timeoutMs: number) {
     });
 
     if (!response.ok) {
-      throw new Error(`Dictionary source responded with ${response.status}`);
+      throw new DictionaryHttpError(
+        response.status,
+        response.status === 404 ? await response.text() : '',
+      );
     }
 
     return response.text();
