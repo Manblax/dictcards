@@ -11,7 +11,7 @@ export default defineConfig({
   webServer: [
     { command: 'node responsive/api.mjs', url: 'http://127.0.0.1:3101', reuseExistingServer: false },
     { command: 'npm run dev -- --hostname 127.0.0.1 --port 3100', url: 'http://127.0.0.1:3100', timeout: 120_000,
-      env: { INTERNAL_API_URL: 'http://127.0.0.1:3101', NEXT_PUBLIC_API_URL: 'http://127.0.0.1:3101' }, reuseExistingServer: false },
+      env: { INTERNAL_API_URL: 'http://127.0.0.1:3101', NEXT_PUBLIC_API_URL: 'http://127.0.0.1:3101', NEXT_DIST_DIR: '.next-responsive' }, reuseExistingServer: false },
   ],
   projects: [
     { name: 'iphone-webkit', use: { browserName: 'webkit', viewport: { width: 430, height: 932 }, isMobile: true, hasTouch: true } },

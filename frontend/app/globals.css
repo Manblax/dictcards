@@ -704,3 +704,56 @@ body {
     padding-top: 0;
   }
 }
+
+/* Module actions and export use the native modal focus/keyboard behavior. */
+.module-dialog {
+  padding: 0;
+  color: var(--app-text-strong);
+  background: var(--app-modal-bg);
+  border: 1px solid var(--app-border);
+  box-shadow: 0 24px 80px rgb(0 0 0 / 30%);
+}
+.module-dialog::backdrop {
+  background: rgb(0 0 0 / 55%);
+}
+.module-export-dialog {
+  inset: 0;
+  margin: 0;
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  max-height: 100dvh;
+}
+.module-export-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.module-actions-dialog {
+  position: fixed;
+  inset: auto 0 0;
+  margin: 0;
+  width: 100%;
+  max-width: none;
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  border-radius: 1.5rem 1.5rem 0 0;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@media (min-width: 640px) {
+  .module-export-dialog {
+    margin: auto;
+    width: min(960px, calc(100vw - 3rem));
+    height: auto;
+    max-height: calc(100dvh - 3rem);
+    border-radius: 1.5rem;
+  }
+  .module-actions-dialog {
+    inset: var(--menu-top) var(--menu-right) auto auto;
+    width: 260px;
+    max-width: calc(100vw - 2rem);
+    border-radius: 1rem;
+  }
+  .module-actions-dialog::backdrop {
+    background: transparent;
+  }
+}

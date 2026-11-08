@@ -2,7 +2,7 @@ import { getModule } from "@/lib/api";
 import { getServerAuthToken } from "@/lib/server-auth";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import DeleteModuleButton from "@/components/DeleteModuleButton";
+import ModuleActions from "@/components/ModuleActions";
 import PronunciationButton from "@/components/PronunciationButton";
 import ModuleStudyModes from "@/components/ModuleStudyModes";
 
@@ -53,12 +53,7 @@ export default async function ModulePage({ params }: ModulePageProps) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                 </svg>
               </button>
-              <Link href={`/module/${module.id}/edit`} className="btn btn-square btn-ghost text-neutral-content" title="Редактировать">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                </svg>
-              </Link>
-              <DeleteModuleButton moduleId={module.id} />
+              <ModuleActions moduleId={module.id} terms={module.terms ?? []} />
             </div>
           </div>
           
